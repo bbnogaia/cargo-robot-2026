@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="css/mystyle.css">
+<script type="text/javascript" src="js/highlight-java-code.js" defer></script>
+<!--
+    <script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+    
+</head>
+   
+<title>CargoBot26</title></head>
+    
+
+<body>
+<div id="top">
+<h1>CargoBot26: SPRINT0</h1>
+</div>  
+
+<div class="body">  
+
+<h2>Introduction</h2>
+<b>GOAL</b>: Chiarire i requisiti del committente e formalizzarli. Si definisce l'architettura logica iniziale, integrando elementi esistenti e nuovi con un relativo piano di testing. 
+Infine, si stabilisce il piano di lavoro con scadenze e Sprint successivi.
+ 
+<h2>Requirements</h2>
+ 
+<!-- <div class="remark"> -->
+<pre>
+A <i>Maritime Cargo</i> shipping company (from now on, simply <b>company</b>) intends to automate the operations of load of <b>containers</b> in the ship's
+cargo hold (or simply <b>hold</b>). To this end, the company plans to employ a <i>Differential Drive Robot</i> (from now, called <b>cargorobot</b>).
+
+The <i>hold</i> is a rectangular, flat area with an Input/Output port (<b>IOPort</b>). The area provides 4 <b>slots</b> to store the containers and
+a slot named <b>slot5</b>.
+
+<img src="./img/req.jpg" alt="emiglio" width="50%" height="50%">
+
+In the picture above:
+
+• The <b>slots1-4</b> depict the hold areas reserved to store one <i>container</i> each,
+
+• The <b>slot5</b> depicts an area, where the <i>cargorobot</i> must temporarily store a container, before to place it in one of the
+  <i>slots1-4</i>. During temporary storage, a 'marker' device labels the container with an identification barcode and signals when this marking
+  activity is completed.
+
+• The <b>IOPort</b> is a device with a <b>pushbutton</b> and a <b>display</b>.
+  The <i>pushbutton</i> is pressed by the customer in order to send a request to load a container on the cargo. The <i>display</i> is used to show the
+  answer to the request and to show the current state of the <i>hold</i>.
+
+• The <b>sensor</b> associated to the <i>IOPort</i> is a device (a <i>sonar</i>) used to detect the presence of a container, when it measures a
+  distance D, such that D &lt; DFREE/2, during a reasonable time (e.g. 3 secs).
+
+
+
+The company asks us to build service named <b>cargoservice</b> that should work as follows.
+
+The <i>cargoservice</i> is able to receive a <b>request to load</b> a container sent by some customer by using the <i>pushbutton</i> of the <i>IOPort</i>.
+
+• It sends the answer retrylater, if the <b>IOPort</b> is currently occupied by a container or if the system is <i>Out of service</i>
+
+• It rejects the request when the hold is already full, i.e. the <b>slots1-4</b> are already occupied.
+
+• Otherwise, it considers the system as <b>engaged</b>, detects a free slot and returns as answer the name of such a reserved slot.
+  While engaged, the system must blink a Led.
+
+When the <i>request to load</i> is accepted, the customer must move the container in the <i>sensor</i> area within prefixed amount of time (e.g. 30
+secs), otherwise the systems becomes <b>disengaged</b>. Then, the <i>cargoservice</i> uses the <i>cargorobot</i> to move the container from the
+<i>IOPort</i> to the <b>slot5</b> (for marking the container) and then to the reserved slot.
+
+
+
+The service must also show on the <i>display</i> on the <i>IOPort</i>:
+
+• the current state of the <i>hold</i>
+
+• the message <b>'Service working'</b>, when it is all is going well
+
+• the message <b>'Out of service'</b> if the <i>sonar sensor</i> measures a distance D &gt; DFREE for at least 3 secs 
+  (perhaps a failure of the <i>sonar</i>).
+</pre>
+  
+
+<h2>Requirement Analysis</h2>
+
+<pre>
+Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> intende automatizzare le operazioni di carico dei container tramite l’utilizzo di un DDR.
+
+• <b><i>cargorobot</i></b> rappresenta l’entità robotica che applica al DDR i servizi richiesti dai requisiti del committente.
+
+• Il <b><i>DDR</i></b> è fornito dal committente tramite software che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
+  Questo modello è progettato per essere facilmente adattabile ad un robot reale.
+
+  <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione VirtualRobot</a></b>
+
+• <b><i>cargorobot</i></b> è un’entità proattiva.
+
+• La <b><i>hold</i></b> (stiva) viene descritta come un’area rettangolare. Quest’area dovrà essere in grado di esprimere la posizione di alcuni componenti del nostro sistema tra cui:
+
+- <b><i>HOME</i></b>
+- <b><i>IOPort</i></b>
+- <b><i>slot</i></b>
+
+La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi (tramite opportune coordinate). 
+Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
+
+<code>
+public interface IHold {
+
+    // restituisce lo slot identificato dal nome
+
+    ISlot getSlot(String slotId);
+
+    // verifica se esiste uno slot libero
+
+    boolean hasFreeSlot();
+
+    // restituisce il primo slot libero. DA CONCORDARE CON IL COMMITTENTE:
+
+    ISlot getFirstFreeSlot();
+
+}
+</code>
+
+• Uno <b><i>slot</i></b> rappresenta una area di parcheggio di container all’interno della <b><i>hold</i></b>.
+
+  Gli <b><i>slot</i></b> sono in totale cinque. Lo "<b><i>slot5</i></b>" è riservato al processo di etichettatura di un container. 
+  Anche questa entità non ha alcun comportamento proattivo, ragion per cui verrà modellata come un POJO. L’area rappresentata da uno <b><i>slot</i></b> non è mobile; 
+  le sue coordinate sono strettamente dipendenti dalla <b><i>hold</i></b>.
+
+<code>
+public interface ISlot {
+
+    String getId();
+
+    boolean getIsFree();
+
+    void setIsFree(boolean v);
+
+}
+</code>
+
+• <b><i>IOPort</i></b> è un dispositivo con <b><i>pushbutton</i></b> e <b><i>display</i></b>.
+
+  - <b><i>pushbutton</i></b> viene premuto dal cliente per inviare una richiesta di carico; non ha alcun comportamento proattivo.
+
+  - <b><i>display</i></b> viene utilizzato come dispositivo di output di visualizzazione di messaggi dal <b><i>cargoservice</i></b>; non ha alcun comportamento proattivo.
+
+  Nel complesso l’<b><i>IOPort</i></b> può essere modellata come un POJO.
+
+<code>
+public interface IIOPort {
+
+    // stato della richiesta di carico
+
+    boolean getIsButtonPressed();
+
+    void setIsButtonPressed(boolean v);
+
+    // visualizza sul display
+
+    void showOnDisplay(String message);
+
+}
+</code>
+
+• <b><i>sonar</i></b> è un componente proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
+
+  - <b><i>D</i></b> distanza rilevata dal sonar
+  - <b><i>DFREE</i></b> riferimento di distanza rilevata
+
+  Le sue caratteristiche portano a modellare il sonar come un componente proattivo in grado di interagire con il sistema comunicando informazioni.
+
+• <b><i>LED</i></b> è un componente hardware in grado di emettere luce
+
+
+</pre>
+<pre>
+<b>Macro-componenti individuati:</b>
+
+• <span style="color:red;"><b><i>cargoservice</i></b></span> si occupa della logica di business relative alle richieste di movimentazione e allocazione dei container. 
+  Presenta un comportamento proattivo in grado di aggiornare i dispositivi di output come display e led. 
+  È inoltre capace di comunicare e percepire messaggi ed eventi da altre entità.
+
+• <span style="color:red;"><b><i>cargorobot</i></b></span> è il componente software che realizza le operazioni richieste. 
+  Si compone di software fornito dal committente. Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della stiva 
+  e di comunicare con il sistema tramite messaggi.
+
+• <span style="color:red;"><b><i>holdcontroller</i></b></span> è il componente che si occuperà di gestire lo stato della stiva, tenendo traccia degli slot liberi/occupati 
+  e della loro posizione.
+
+• <span style="color:red;"><b><i>sonarcontroller</i></b></span> è il componente che si occuperà di interfacciarsi con il dispositivo fisico “sonar”.
+
+• <span style="color:red;"><b><i>ledcontroller</i></b></span> è il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.
+
+</pre>
+<pre>
+<b>Domande per il committente:</b>
+<span style="color: cadetblue;">
+
+Hold:
+- Secondo quale criterio vengono assegnati gli slot?
+- Con che unità di misura gestire le coordinate degli slot all'interno della hold?
+
+Bottone:
+- Come è realizzato il bottone? 
+- È un componente hardware che comunica con l’IOPort?
+- La sua pressione deve essere simulata?
+
+IOPort:
+- Cosa si intende per "current state of the hold" da mostrare nel display?
+- I messaggi "current state of the hold" e "Out Of Service / Service Working", sono due diversi o sono gestiti con uno stesso messaggio?
+- L'IOPort è un macro-componente?
+
+Sonar:
+- Viene fornito dal committente o deve essere realizzato da zero?
+- Se viene fornito come comunica?
+- Che unità di misura utilizza?
+- DFREE viene descritto come un valore predefinito: quanto vale?
+
+Marker:
+- Il marker è un macro-componente?
+- Viene descritto come “un dispositivo di marcatura che etichetta il container con un codice a barre identificativo e segnala 
+quando l'operazione di marcatura è completata”, quindi è un componente proattivo che comunica con il sistema? 
+- Viene fornito dal committente o deve essere realizzato da zero?
+
+</span>
+</pre>
+
+
+ 
+
+<h2>Problem Analysis</h2>
+<pre>
+
+</pre>
+
+<h2>Test plans</h2> 
+
+<h2>Project</h2> 
+
+
+<h2>Testing</h2> 
+
+
+<h2>Deployment</h2> 
+
+ 
+<h2>Maintenance</h2> 
+ 
+<!-- USEFUL
+<table style="width:100%" border="1">
+<tr>
+<td style="width:50%">
+</td>
+<td></td>
+</tr>
+</table>
+-->
+	      	
+<br/><br/> 	
+</div>   
+
+<div style="background-color:rgba(86, 56, 253, 0.9); width:60%; text-align:left; color:white; padding:15px;">
+    <h3>Team</h3>
+    <p>
+        <strong>Alessandro Quaranta</strong> - alessandro.quaranta@studio.unibo.it<br>
+        <strong>Gaia Verzelli</strong> - gaia.verzelli@studio.unibo.it
+    </p>
+    <p>
+        <strong>GitHub repository:</strong><br>
+        <a href="https://github.com/alequaranta/iss2026quaranta" style="color:white;">
+            https://github.com/alequaranta/iss2026quaranta
+        </a>
+    </p>
+    <img src="./img/alessandro.jpg" alt="emiglio" width="15%" height="15%">
+    <img src="./img/mbot-S.jpg" alt="mbot" width="15%" height="15%">
+</div>
+</body>
+</html>
