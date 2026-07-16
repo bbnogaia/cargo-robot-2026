@@ -200,17 +200,18 @@ public interface IIOPort {
 
 Hold:
 - Secondo quale criterio vengono assegnati gli slot?
-- Con che unità di misura gestire le coordinate degli slot all'interno della hold?
+- Con che unità di misura e come deve gestire le coordinate degli slot all'interno della hold?
 
 Bottone:
 - Come è realizzato il bottone? 
 - È un componente hardware che comunica con l’IOPort?
-- La sua pressione deve essere simulata?
+- La sua pressione deve essere simulata? è un componente dato dal committente o va creato?
 
 IOPort:
+- Il display è un dispositivo hardware esterno a cui mandare messaggi o va realizzata una GUI?
 - Cosa si intende per "current state of the hold" da mostrare nel display?
 - I messaggi "current state of the hold" e "Out Of Service / Service Working", sono due diversi o sono gestiti con uno stesso messaggio?
-- L'IOPort è un macro-componente?
+
 
 Sonar:
 - Viene fornito dal committente o deve essere realizzato da zero?
@@ -219,10 +220,9 @@ Sonar:
 - DFREE viene descritto come un valore predefinito: quanto vale?
 
 Marker:
-- Il marker è un macro-componente?
+- Il marker è un macro-componente? Viene fornito dal committente o deve essere realizzato da zero?
 - Viene descritto come “un dispositivo di marcatura che etichetta il container con un codice a barre identificativo e segnala 
 quando l'operazione di marcatura è completata”, quindi è un componente proattivo che comunica con il sistema? 
-- Viene fornito dal committente o deve essere realizzato da zero?
 
 </span>
 </pre>
@@ -231,31 +231,33 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
  
 
 <h2>Problem Analysis</h2>
-<h3>Qak</h3>
-<div>
-  Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
-  Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
-  Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
-
-  A seguito di questa scelta, individuiamo i seguenti nodi:
-  - Un nodo dedicato i due componenti hardware, sonar e led;
-
-
-</div>
 <pre>
+Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
+Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
+Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
 
+A seguito di questa scelta, individuiamo i seguenti nodi:
+
+• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
+
+• Un nodo dedicato al sistema cargoservice
+
+• Un nodo relativo a cargorobot
+
+• (Ancora da concordare) Un nodo relativo al sistema di marker dei container
+
+Gli attori in gioco saranno definiti solo dopo aver parlato con il committente ed aver completato lo studio di questo Sprint.
 </pre>
 
 <h2>Test plans</h2> 
-
+<pre>
+  I piani di test saranno definiti solo dopo aver parlato con il committente ed aver completato lo studio di questo Sprint.
+</pre>
 <h2>Project</h2> 
-
 
 <h2>Testing</h2> 
 
-
 <h2>Deployment</h2> 
-
  
 <h2>Maintenance</h2> 
  
@@ -279,7 +281,14 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
         <strong>Gaia Verzelli</strong> - gaia.verzelli@studio.unibo.it
     </p>
     <p>
-        <strong>GitHub repository:</strong><br>
+        <strong>Project GitHub repository:</strong><br>
+        <a href="https://github.com/bbnogaia/cargo-robot-2026" style="color:white;">
+            https://github.com/bbnogaia/cargo-robot-2026
+        </a>
+    </p>
+
+    <p>
+        <strong>Student GitHub repository:</strong><br>
         <a href="https://github.com/alequaranta/iss2026quaranta" style="color:white;">
             https://github.com/alequaranta/iss2026quaranta
         </a>
