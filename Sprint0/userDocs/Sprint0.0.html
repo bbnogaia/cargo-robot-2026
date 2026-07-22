@@ -149,14 +149,15 @@ public interface ISlot {
   L’<b><i>IOPort</i></b> è modellata come una Web-GUI che comunica attraverso un protocollo a messaggi asincrono.
 
 <code>
-Messaggi IOPort → cargoservice:
-// quando viene premuto il pushbutton
-  RequestLoad()
+  System cargosystem // TODO: boh va bene??
 
-Messaggi cargoservice → IOPort:
-  ShowState(holdState)
-  ShowMessage("Service working" | "Out of service")
-  ShowAnswer(slotId | "retrylater" | "rejected")
+  // messaggio di richeista da IOPort a cargoservice per caricare (quando si preme il pushbutton)
+  Request requestLoad: requestLoad(NO_ARG)
+  Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // potrà essere: slotId, "retrylater", "rejected"
+
+  // messaggio di comunicazione/notifiche da cargoservice a IOPort:
+  Dispatch showState: showState(HOLD_STATE)
+  Dispatch showMessage: showMessage(MSG) // il msg potrà essere "Service working" oppure "Out of service"
 </code>
 
 • <b><i>sonar</i></b> è un componente proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
