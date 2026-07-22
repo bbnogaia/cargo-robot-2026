@@ -86,43 +86,63 @@ The service must also show on the <i>display</i> on the <i>IOPort</i>:
 <pre>
 Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> intende automatizzare le operazioni di carico dei container tramite l’utilizzo di un DDR.
 
-• <b><i>cargorobot</i></b> rappresenta l’entità robotica che applica al DDR i servizi richiesti dai requisiti del committente.
+• <span style="color:rgb(255, 106, 0);"><b><i>cargorobot</i></b></span> rappresenta l’entità robotica che applica al DDR i servizi richiesti dai requisiti del committente.
 
-• Il <b><i>DDR</i></b> è fornito dal committente tramite software che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
+  Il <b><i>DDR</i></b> è fornito dal committente tramite software che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
   Questo modello è progettato per essere facilmente adattabile ad un robot reale.
+  <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa al Robot Virtuale</a></b>
+  
+  In particolare, faremo riferimento al servizio RobotSmart26 poichè capace di rappresentare la stiva tramite una mappa mentale 
+  e di pianificare come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
 
-  <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione VirtualRobot</a></b>
+  Dunque, RobotSmart26 ci permette di concordare la "forma" della stiva e di mappare eventuali ostacoli all'interno di essa.
 
-• <b><i>cargorobot</i></b> è un’entità proattiva.
+  Nel complesso <b><i>cargorobot</i></b> è un’entità proattiva capace di ricevere/inviare messaggi ed eseguire movimenti sul DDR.
 
-• La <b><i>hold</i></b> (stiva) viene descritta come un’area rettangolare. Quest’area dovrà essere in grado di esprimere la posizione di alcuni componenti del nostro sistema tra cui:
 
-- <b><i>HOME</i></b>
-- <b><i>IOPort</i></b>
-- <b><i>slot</i></b>
+• La <span style="color:rgb(255, 106, 0);"><b><i>hold</i></b></span> (stiva) viene descritta come un’area rettangolare. Quest’area dovrà essere in grado di esprimere la posizione di alcuni componenti del nostro sistema tra cui:
 
-La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi (tramite opportune coordinate). 
-Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
+  - <b><i>HOME</i></b> -- concetto intrinseco di RobotSmart26
+  - <b><i>IOPort</i></b> -- zona di carico dei container
+  - <b><i>slot</i></b> -- come area di parcheggio
+
+  La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi.
+  Le coordinate di questi elementi sono espresse in unità robotiche (per un maggiore approfondimento consultare la documentazione).
+
+  Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
 
 <code>
 public interface IHold {
 
-    // restituisce lo slot identificato dal nome
+  //--IO-PORT:
+    // setta la posizione dell'IOPort in coordinate RobotSmart (X,Y)
+    void setIOPortPosition(String p);
 
+    // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
+    String getIOPortPosition();
+
+  //--SLOT:
+    // restituisce lo slot identificato dal nome
     ISlot getSlot(String slotId);
 
     // verifica se esiste uno slot libero
-
     boolean hasFreeSlot();
 
-    // restituisce il primo slot libero. DA CONCORDARE CON IL COMMITTENTE:
+    // setta la posizione di uno slot in coordinate RobotSmart (X,Y)
+    void setSlotPosition(String slotId, String p);
+    
+    // restituisce la posizione dello slot in coordinate RobotSmart (X,Y)
+    String getSlotPosition(String slotId);
 
+    //DA CHIARIRE: aggiungere coordinate per accesso allo slot??
+
+    // restituisce il primo slot libero. DA CONCORDARE CON IL COMMITTENTE:
     ISlot getFirstFreeSlot();
 
 }
 </code>
 
-• Uno <b><i>slot</i></b> rappresenta una area di parcheggio di container all’interno della <b><i>hold</i></b>.
+• Uno <span style="color:rgb(255, 106, 0);"><b><i>slot</i></b></span> rappresenta una area di parcheggio di container all’interno della <b><i>hold</i></b>.
 
   Gli <b><i>slot</i></b> sono in totale cinque. Lo "<b><i>slot5</i></b>" è riservato al processo di etichettatura di un container. 
   Anche questa entità non ha alcun comportamento proattivo, ragion per cui verrà modellata come un POJO. L’area rappresentata da uno <b><i>slot</i></b> non è mobile; 
@@ -131,86 +151,82 @@ public interface IHold {
 <code>
 public interface ISlot {
 
+    // restituisce l'id dello slot
     String getId();
 
+    // restituisce se lo slot è libero
     boolean getIsFree();
 
+    // setta lo slot
     void setIsFree(boolean v);
 
 }
 </code>
 
-• <b><i>IOPort</i></b> è un dispositivo con <b><i>pushbutton</i></b> e <b><i>display</i></b>.
+• <span style="color:rgb(255, 106, 0);"><b><i>IOPort</i></b></span>, come rischiesto dal committente, è modellata come una Web-GUI che comunica attraverso un protocollo a messaggi asincrono.
+  
+  Presenta due elementi funzionali:
 
   - <b><i>pushbutton</i></b> viene premuto dal cliente per inviare una richiesta di carico; non ha alcun comportamento proattivo.
-
   - <b><i>display</i></b> viene utilizzato come dispositivo di output di visualizzazione di messaggi dal <b><i>cargoservice</i></b>; non ha alcun comportamento proattivo.
 
-  L’<b><i>IOPort</i></b> è modellata come una Web-GUI che comunica attraverso un protocollo a messaggi asincrono.
+  IOPort identifica inoltre l'area di carico dei container.
 
-<code>
-  System cargosystem // TODO: boh va bene??
 
-  // messaggio di richeista da IOPort a cargoservice per caricare (quando si preme il pushbutton)
-  Request requestLoad: requestLoad(NO_ARG)
-  Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // potrà essere: slotId, "retrylater", "rejected"
+• <span style="color:rgb(255, 106, 0);"><b><i>sonar</i></b></span> è un componente proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
 
-  // messaggio di comunicazione/notifiche da cargoservice a IOPort:
-  Dispatch showState: showState(HOLD_STATE)
-  Dispatch showMessage: showMessage(MSG) // il msg potrà essere "Service working" oppure "Out of service"
-</code>
-
-• <b><i>sonar</i></b> è un componente proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
+  Il committente vuole che questo sia realizzato tramite un PicoW.
 
   - <b><i>D</i></b> distanza rilevata dal sonar
   - <b><i>DFREE</i></b> riferimento di distanza rilevata
 
   Le sue caratteristiche portano a modellare il sonar come un componente proattivo in grado di interagire con il sistema comunicando informazioni.
 
-• <b><i>LED</i></b> è un componente hardware in grado di emettere luce
+• <b><i>LED</i></b> è un componente hardware in grado di emettere luce. Fa parte dell'architettura del PicoW.
 
 
 </pre>
 <pre>
 <b>Macro-componenti individuati:</b>
 
-• <span style="color:red;"><b><i>cargoservice</i></b></span> si occupa della logica di business relative alle richieste di movimentazione e allocazione dei container. 
-  Presenta un comportamento proattivo in grado di aggiornare i dispositivi di output come display e led. 
-  È inoltre capace di comunicare e percepire messaggi ed eventi da altre entità.
+• <span style="color:red;"><b><i>cargoservice</i></b></span> 
+  - Si occupa della logica di business relativa alle richieste di movimentazione e allocazione dei container. 
+  - Presenta un comportamento proattivo in grado di aggiornare i dispositivi di output come display e led. 
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
 
-• <span style="color:red;"><b><i>cargorobot</i></b></span> è il componente software che realizza le operazioni richieste. 
-  Si compone di software fornito dal committente. Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della stiva 
-  e di comunicare con il sistema tramite messaggi.
+• <span style="color:red;"><b><i>cargorobot</i></b></span> 
+  - Il componente che realizza le operazioni richieste relative al DDR. 
+  - Si compone di software fornito dal committente. Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della hold. 
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
 
-• <span style="color:red;"><b><i>holdcontroller</i></b></span> è il componente che si occuperà di gestire lo stato della stiva, tenendo traccia degli slot liberi/occupati 
+• <span style="color:red;"><b><i>webgui-ioport</i></b></span> 
+  - Il componente che si interfaccia con l'utente.
+  - In input un bottone, in output un display.
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
+
+• <span style="color:red;"><b><i>holdcontroller</i></b></span> 
+  - Il componente che si occuperà di gestire lo stato della stiva, tenendo traccia degli slot liberi/occupati 
   e della loro posizione.
 
-• <span style="color:red;"><b><i>sonarcontroller</i></b></span> è il componente che si occuperà di interfacciarsi con il dispositivo fisico “sonar”.
+• <span style="color:red;"><b><i>sonarcontroller</i></b></span> 
+  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “sonar”.
 
-• <span style="color:red;"><b><i>ledcontroller</i></b></span> è il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.
+• <span style="color:red;"><b><i>ledcontroller</i></b></span> 
+  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.
 
 </pre>
 <pre>
 <b>Domande per il committente:</b>
 <span style="color: cadetblue;">
-
 Hold:
 - Secondo quale criterio vengono assegnati gli slot?
-- Con che unità di misura e come deve gestire le coordinate degli slot all'interno della hold?
-
-Bottone:
-- Come è realizzato il bottone? 
-- È un componente hardware che comunica con l’IOPort?
-- La sua pressione deve essere simulata? è un componente dato dal committente o va creato?
 
 IOPort:
-- Il display è un dispositivo hardware esterno a cui mandare messaggi o va realizzata una GUI? -> risposta: è una Web-GUI
 - Cosa si intende per "current state of the hold" da mostrare nel display?
 - I messaggi "current state of the hold" e "Out Of Service / Service Working", sono due diversi o sono gestiti con uno stesso messaggio?
 
-
 Sonar:
-- Viene fornito dal committente o deve essere realizzato da zero?
+- Viene fornito dal committente o deve essere realizzato da zero? (Il codice del PicoW)
 - Se viene fornito come comunica?
 - Che unità di misura utilizza?
 - DFREE viene descritto come un valore predefinito: quanto vale?
@@ -219,7 +235,6 @@ Marker:
 - Il marker è un macro-componente? Viene fornito dal committente o deve essere realizzato da zero?
 - Viene descritto come “un dispositivo di marcatura che etichetta il container con un codice a barre identificativo e segnala 
 quando l'operazione di marcatura è completata”, quindi è un componente proattivo che comunica con il sistema? 
-
 </span>
 </pre>
 
@@ -236,11 +251,13 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
 
   A seguito di questa scelta, individuiamo i seguenti nodi:
 
-  • Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
+  • Un nodo relativo a cargorobot
 
   • Un nodo dedicato al sistema cargoservice
 
-  • Un nodo relativo a cargorobot
+  • Un nodo dedicato alla web-gui
+
+  • Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
 
   • (Ancora da concordare) Un nodo relativo al sistema di marker dei container
 
@@ -248,20 +265,7 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
 </pre>
 
 <pre>
-  <b>Analisi del componente cargorobot</b>
-
-  Si sceglie di modellare il componente <span style="color:green;"><b><i>cargorobot</i></b></span> come un attore di alto livello che si interfaccia con <span style="color:green;"><b><i>robotsmart</i></b></span> tramite messaggi.
-  È stata compiuta questa scelta per due motivi principali:
-
-  1. disaccoppiare la logica del carico merci dalla logica di pianificazione dei percorsi e di evitamento di possibili ostacoli;
-
-  2. svincolare il componente dalla tecnologia specifica del robot (sia esso un simulatore oppure un DDR fisico reale).
-</pre>
-
-<pre>
   <b>Messaggi con Qak</b>
-
-  TODO: da ricontrollare
   <code>
     System cargosystem
 
@@ -270,81 +274,26 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
     // Interazione IOPort Web-GUI <-> CargoService
     Request requestLoad: requestLoad(NO_ARG)
     Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
+    Dispatch messageDisplay : messageDisplay(MESSAGE) 
 
     // Interazione CargoService <-> CargoRobot
     Request movecontainer : movecontainer(FROM_SLOT, TO_SLOT)
-    Reply movecompleted : movecompleted(RESULT) for movecontainer // RESULT = ok(SLOT_NUM) | failed(REASON)
+    Reply movecompleted : movecompleted(RESULT) for movecontainer // RESULT = ok | failed
 
     // Interazione CargoRobot <-> RobotSmart
     Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
-    Reply moverobotdone : moverobotdone(ARG) for moverobot // TODO: può fallire uno spostamento?
+    Reply moverobotdone : moverobotdone(ARG) for moverobot 
+    Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
 
     // Eventi e notifiche Hardware
     Event sonardata : distance(D)
     Event sonaralarm : sonaralarm(REASON)
-    Event markerdone : markerdone(CONTAINER_ID)
-    Dispatch updateled : updateled(STATE) // STATE = off | blinking | on
 
+    // Interazione CargoRobot <-> ledcontroller (? da definire bene)
+    Dispatch updateled : updateled(STATE) // STATE = off | on
 
-
-    // CONTEXT
-    Context ctxcargosystem ip [host="localhost" port=8020] // TODO: quanti context mettiamo??
-
-
-
-    // QAK ACTORS
-    QActor cargoservice context ctxcargosystem {
-        State s0 initial {
-            println("cargoservice STARTED")
-        }
-        // TODO: si dovranno gestire i messaggi di loadrequest e coordinamento stiva/robot
-    }
-
-    QActor ioportgui context ctxcargosystem {
-        State s0 initial {
-            println("ioportgui Web-GUI STARTED")
-        }
-    }
-
-    QActor cargorobot context ctxcargosystem {
-        State s0 initial {
-            println("cargorobot STARTED")
-        }
-        // TODO: per farlo muovere fisicamente si userà robotsmart
-    }
-
-    QActor holdcontroller context ctxcargosystem {
-        State s0 initial {
-            println("holdcontroller STARTED")
-        }
-    }
-
-    QActor sonarcontroller context ctxcargosystem {
-        State s0 initial {
-            println("sonarcontroller STARTED")
-        }
-    }
-
-    QActor ledcontroller context ctxcargosystem {
-        State s0 initial {
-            println("ledcontroller STARTED")
-        }
-    }
-
-    QActor marker context ctxcargosystem {
-        State s0 initial {
-            println("marker device STARTED")
-        }
-    }
+    // DA CONCORDARE:  Event markerdone : markerdone(CONTAINER_ID)
   </code>
-</pre>
-
-<pre>
-  <b>Goal dello sprint 1</b>
-
-  Si prevede, nello sprint 1, di realizzare la logica di business principale del cargoservice e della Web-GUI, implementando anche
-  la gestione delle richieste di carico con stiva non piena, la prenotazione degli slot e la formalizzazione di test plans 
-  per l'accettazione ed il rifiuto dei container.
 </pre>
 
 <h2>Test plans</h2> 
