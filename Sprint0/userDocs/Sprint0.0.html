@@ -265,77 +265,77 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
   <code>
     System cargosystem
 
-// --- DECLARATION OF MESSAGES AND EVENTS ---
+    // MESSAGES AND EVENTS
 
-// Interazione IOPort Web-GUI <-> CargoService
-Request loadrequest : loadrequest(CUSTOMER_ID)
-Reply loadaccept    : loadaccept(SLOT_NUM)
-Reply loadreject    : loadreject(REASON)
+    // Interazione IOPort Web-GUI <-> CargoService
+    Request requestLoad: requestLoad(NO_ARG)
+    Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
 
-// Interazione CargoService <-> CargoRobot
-Request movecontainer : movecontainer(FROM_SLOT, TO_SLOT)
-Reply movecompleted   : movecompleted(SLOT_NUM)
-Reply movefailed      : movefailed(REASON)
+    // Interazione CargoService <-> CargoRobot
+    Request movecontainer : movecontainer(FROM_SLOT, TO_SLOT)
+    Reply movecompleted : movecompleted(RESULT) for movecontainer // RESULT = ok(SLOT_NUM) | failed(REASON)
 
-// Interazione CargoRobot <-> RobotSmart (Servizio committente)
-Request moverobot     : moverobot(TARGETX, TARGETY, STEPTIME)
-Reply moverobotdone   : moverobotok(ARG)
-Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO)
+    // Interazione CargoRobot <-> RobotSmart
+    Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
+    Reply moverobotdone : moverobotdone(ARG) for moverobot // TODO: può fallire uno spostamento?
 
-// Eventi e notifiche Hardware
-Event sonardata       : distance(D)
-Event sonaralarm      : sonaralarm(REASON)
-Event markerdone      : markerdone(CONTAINER_ID)
-Dispatch updateled    : updateled(STATE) // STATE = off | blinking | on
+    // Eventi e notifiche Hardware
+    Event sonardata : distance(D)
+    Event sonaralarm : sonaralarm(REASON)
+    Event markerdone : markerdone(CONTAINER_ID)
+    Dispatch updateled : updateled(STATE) // STATE = off | blinking | on
 
-// --- CONTEXT ---
-Context ctxcargosystem ip [host="localhost" port=8020]
 
-// --- QAK ACTORS ---
 
-QActor cargoservice context ctxcargosystem {
-    State s0 initial {
-        println("cargoservice STARTED")
+    // CONTEXT
+    Context ctxcargosystem ip [host="localhost" port=8020] // TODO: quanti context mettiamo??
+
+
+
+    // QAK ACTORS
+    QActor cargoservice context ctxcargosystem {
+        State s0 initial {
+            println("cargoservice STARTED")
+        }
+        // TODO: si dovranno gestire i messaggi di loadrequest e coordinamento stiva/robot
     }
-    // TODO: Gestione messaggi loadrequest e coordinamento stiva/robot
-}
 
-QActor ioportgui context ctxcargosystem {
-    State s0 initial {
-        println("ioportgui Web-GUI STARTED")
+    QActor ioportgui context ctxcargosystem {
+        State s0 initial {
+            println("ioportgui Web-GUI STARTED")
+        }
     }
-}
 
-QActor cargorobot context ctxcargosystem {
-    State s0 initial {
-        println("cargorobot STARTED")
+    QActor cargorobot context ctxcargosystem {
+        State s0 initial {
+            println("cargorobot STARTED")
+        }
+        // TODO: per farlo muovere fisicamente si userà robotsmart
     }
-    // Delegate alla suite robotsmart per la navigazione fisica
-}
 
-QActor holdcontroller context ctxcargosystem {
-    State s0 initial {
-        println("holdcontroller STARTED")
+    QActor holdcontroller context ctxcargosystem {
+        State s0 initial {
+            println("holdcontroller STARTED")
+        }
     }
-}
 
-QActor sonarcontroller context ctxcargosystem {
-    State s0 initial {
-        println("sonarcontroller STARTED")
+    QActor sonarcontroller context ctxcargosystem {
+        State s0 initial {
+            println("sonarcontroller STARTED")
+        }
     }
-}
 
-QActor ledcontroller context ctxcargosystem {
-    State s0 initial {
-        println("ledcontroller (PicoW) STARTED")
+    QActor ledcontroller context ctxcargosystem {
+        State s0 initial {
+            println("ledcontroller STARTED")
+        }
     }
-}
 
-QActor marker context ctxcargosystem {
-    State s0 initial {
-        println("marker device STARTED")
+    QActor marker context ctxcargosystem {
+        State s0 initial {
+            println("marker device STARTED")
+        }
     }
-}
   </code>
 </pre>
 
