@@ -146,22 +146,17 @@ public interface ISlot {
 
   - <b><i>display</i></b> viene utilizzato come dispositivo di output di visualizzazione di messaggi dal <b><i>cargoservice</i></b>; non ha alcun comportamento proattivo.
 
-  Nel complesso l’<b><i>IOPort</i></b> può essere modellata come un POJO.
+  L’<b><i>IOPort</i></b> è modellata come una Web-GUI che comunica attraverso un protocollo a messaggi asincrono.
 
 <code>
-public interface IIOPort {
+Messaggi IOPort → cargoservice:
+// quando viene premuto il pushbutton
+  RequestLoad()
 
-    // stato della richiesta di carico
-
-    boolean getIsButtonPressed();
-
-    void setIsButtonPressed(boolean v);
-
-    // visualizza sul display
-
-    void showOnDisplay(String message);
-
-}
+Messaggi cargoservice → IOPort:
+  ShowState(holdState)
+  ShowMessage("Service working" | "Out of service")
+  ShowAnswer(slotId | "retrylater" | "rejected")
 </code>
 
 • <b><i>sonar</i></b> è un componente proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
@@ -208,7 +203,7 @@ Bottone:
 - La sua pressione deve essere simulata? è un componente dato dal committente o va creato?
 
 IOPort:
-- Il display è un dispositivo hardware esterno a cui mandare messaggi o va realizzata una GUI?
+- Il display è un dispositivo hardware esterno a cui mandare messaggi o va realizzata una GUI? -> risposta: è una Web-GUI
 - Cosa si intende per "current state of the hold" da mostrare nel display?
 - I messaggi "current state of the hold" e "Out Of Service / Service Working", sono due diversi o sono gestiti con uno stesso messaggio?
 
@@ -232,21 +227,123 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
 
 <h2>Problem Analysis</h2>
 <pre>
-Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
-Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
-Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
+  <b>Utilizzo di Qak</b>
 
-A seguito di questa scelta, individuiamo i seguenti nodi:
+  Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
+  Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
+  Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
 
-• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
+  A seguito di questa scelta, individuiamo i seguenti nodi:
 
-• Un nodo dedicato al sistema cargoservice
+  • Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
 
-• Un nodo relativo a cargorobot
+  • Un nodo dedicato al sistema cargoservice
 
-• (Ancora da concordare) Un nodo relativo al sistema di marker dei container
+  • Un nodo relativo a cargorobot
 
-Gli attori in gioco saranno definiti solo dopo aver parlato con il committente ed aver completato lo studio di questo Sprint.
+  • (Ancora da concordare) Un nodo relativo al sistema di marker dei container
+
+  Gli attori in gioco saranno definiti solo dopo aver parlato con il committente ed aver completato lo studio di questo Sprint.
+</pre>
+
+<pre>
+  <b>Analisi del componente cargorobot</b>
+
+  Si sceglie di modellare il componente <span style="color:green;"><b><i>cargorobot</i></b></span> come un attore di alto livello che si interfaccia con <span style="color:green;"><b><i>robotsmart</i></b></span> tramite messaggi.
+  È stata compiuta questa scelta per due motivi principali:
+
+  1. disaccoppiare la logica del carico merci dalla logica di pianificazione dei percorsi e di evitamento di possibili ostacoli;
+
+  2. svincolare il componente dalla tecnologia specifica del robot (sia esso un simulatore oppure un DDR fisico reale).
+</pre>
+
+<pre>
+  <b>Messaggi con Qak</b>
+
+  TODO: da ricontrollare
+  <code>
+    System cargosystem
+
+// --- DECLARATION OF MESSAGES AND EVENTS ---
+
+// Interazione IOPort Web-GUI <-> CargoService
+Request loadrequest : loadrequest(CUSTOMER_ID)
+Reply loadaccept    : loadaccept(SLOT_NUM)
+Reply loadreject    : loadreject(REASON)
+
+// Interazione CargoService <-> CargoRobot
+Request movecontainer : movecontainer(FROM_SLOT, TO_SLOT)
+Reply movecompleted   : movecompleted(SLOT_NUM)
+Reply movefailed      : movefailed(REASON)
+
+// Interazione CargoRobot <-> RobotSmart (Servizio committente)
+Request moverobot     : moverobot(TARGETX, TARGETY, STEPTIME)
+Reply moverobotdone   : moverobotok(ARG)
+Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO)
+
+// Eventi e notifiche Hardware
+Event sonardata       : distance(D)
+Event sonaralarm      : sonaralarm(REASON)
+Event markerdone      : markerdone(CONTAINER_ID)
+Dispatch updateled    : updateled(STATE) // STATE = off | blinking | on
+
+// --- CONTEXT ---
+Context ctxcargosystem ip [host="localhost" port=8020]
+
+// --- QAK ACTORS ---
+
+QActor cargoservice context ctxcargosystem {
+    State s0 initial {
+        println("cargoservice STARTED")
+    }
+    // TODO: Gestione messaggi loadrequest e coordinamento stiva/robot
+}
+
+QActor ioportgui context ctxcargosystem {
+    State s0 initial {
+        println("ioportgui Web-GUI STARTED")
+    }
+}
+
+QActor cargorobot context ctxcargosystem {
+    State s0 initial {
+        println("cargorobot STARTED")
+    }
+    // Delegate alla suite robotsmart per la navigazione fisica
+}
+
+QActor holdcontroller context ctxcargosystem {
+    State s0 initial {
+        println("holdcontroller STARTED")
+    }
+}
+
+QActor sonarcontroller context ctxcargosystem {
+    State s0 initial {
+        println("sonarcontroller STARTED")
+    }
+}
+
+QActor ledcontroller context ctxcargosystem {
+    State s0 initial {
+        println("ledcontroller (PicoW) STARTED")
+    }
+}
+
+QActor marker context ctxcargosystem {
+    State s0 initial {
+        println("marker device STARTED")
+    }
+}
+  </code>
+</pre>
+
+<pre>
+  <b>Goal dello sprint 1</b>
+
+  Si prevede, nello sprint 1, di realizzare la logica di business principale del cargoservice e della Web-GUI, implementando anche
+  la gestione delle richieste di carico con stiva non piena, la prenotazione degli slot e la formalizzazione di test plans 
+  per l'accettazione ed il rifiuto dei container.
 </pre>
 
 <h2>Test plans</h2> 

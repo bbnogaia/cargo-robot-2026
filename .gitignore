@@ -3,3 +3,8 @@
 
 # Finder metadata in qualsiasi sottocartella
 **/.DS_Store
+
+# Ambiente virtuale di Python
+venv/
+.venv/
+env/
