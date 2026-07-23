@@ -138,9 +138,7 @@ public interface IHold {
     // restituisce la posizione dello slot in coordinate RobotSmart (X,Y)
     String getSlotPosition(String slotId);
 
-    //DA CHIARIRE: aggiungere coordinate per accesso allo slot??
-
-    // restituisce il primo slot libero. DA CONCORDARE CON IL COMMITTENTE:
+    // restituisce il primo slot libero.
     ISlot getFirstFreeSlot();
 
 }
@@ -222,12 +220,13 @@ public interface ISlot {
 <pre>
 <b>Domande per il committente:</b>
 <span style="color: cadetblue;">
-Hold:
+
+  Hold:
 - Secondo quale criterio vengono assegnati gli slot?
+- Necessaria la posizione d'accesso?
 
 IOPort:
 - Cosa si intende per "current state of the hold" da mostrare nel display?
-- I messaggi "current state of the hold" e "Out Of Service / Service Working", sono due diversi o sono gestiti con uno stesso messaggio?
 
 Sonar:
 - Viene fornito dal committente o deve essere realizzato da zero? (Il codice del PicoW)
@@ -247,34 +246,39 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
 
 <h2>Problem Analysis</h2>
 <pre>
-  <b>Utilizzo di Qak</b>
+<b>Componenti non-attivi:</b>
 
-  Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
-  Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
-  Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
+In relazione ai componenti non-attivi identificati in precedenza è bene specificare che:
 
-  A seguito di questa scelta, individuiamo i seguenti nodi:
+• (DA CONCORDARE?) La <b>hold</b> restituisce il primo slot libero.
 
-  • Un nodo relativo a cargorobot
+• (DA CONCORDARE?) Il DDR necessita unicamente della posizione degli <b>slot</b> (in coordinate robotiche).
 
-  • Un nodo dedicato al sistema cargoservice
-
-  • Un nodo dedicato alla web-gui
-
-  • Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
-
-  • (Ancora da concordare) Un nodo relativo al sistema di marker dei container
-
-  Gli attori in gioco saranno definiti solo dopo aver parlato con il committente ed aver completato lo studio di questo Sprint.
 </pre>
 
 <pre>
-  <b>Messaggi con Qak</b>
+<b>Componenti attivi: Utilizzo di Qak</b>
+
+Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
+Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
+Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
+
+A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 176, 210);"><b>nodi</b></span>:
+
+• Un nodo relativo a cargorobot
+
+• Un nodo dedicato al sistema cargoservice
+
+• Un nodo dedicato alla web-gui
+
+• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
+
+• (Ancora da concordare) Un nodo relativo al sistema di marker dei container
+</pre>
+
+<pre>
+<b>Definizione dei Messaggi del Sistema con Qak:</b>
   <code>
-    System cargosystem
-
-    // MESSAGES AND EVENTS
-
     // Interazione IOPort Web-GUI <-> CargoService
     Request requestLoad: requestLoad(NO_ARG)
     Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
@@ -293,28 +297,146 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
     Event sonardata : distance(D)
     Event sonaralarm : sonaralarm(REASON)
 
-    // Interazione CargoRobot <-> ledcontroller (? da definire bene)
+    // Interazione CargoRobot <-> ledcontroller (? DA DEFINIRE)
     Dispatch updateled : updateled(STATE) // STATE = off | on
-
-    // DA CONCORDARE:  Event markerdone : markerdone(CONTAINER_ID)
   </code>
 </pre>
 
 <h2>Test plans</h2> 
 <pre>
-  I piani di test relativi a Slot: 
+<b>Componenti non-attivi:</b>
+
+• Slot:
+<code>
+  private ISlot slot;
+	
+  @Before
+  public void setUp() {
+    slot = null;
+  }
+	
+  @Test
+  public void testGetId() {
+    assertEquals("slot1", slot.getId());
+  }
+ 
+  @Test
+  public void testDefaultIsFree() {
+        // uno slot appena creato è libero di default
+        assertTrue(slot.getIsFree());
+  }
+ 
+  @Test
+  public void testSetIsOccupied() {
+        slot.setIsFree(false);
+        assertFalse(slot.getIsFree());
+  }
+    
+  @Test
+  public void testSetIsFree() {
+        slot.setIsFree(true);
+        assertTrue(slot.getIsFree());
+  }
+</code>
+
+• Hold:
+<code>
+  private IHold hold;
+
+  @Before
+  public void setUp() {
+	  hold = null;
+  }
+	 
+  @Test
+  public void testIOPortPositionSetAndGet() {
+	        hold.setIOPortPosition("(0,0)");
+	        assertEquals("(0,0)", hold.getIOPortPosition());
+  }
+	    
+  @Test
+  public void testGetSlot() {
+	    	// slot inizializzati da 1 a 5
+	        ISlot s = hold.getSlot("slot1");
+	        assertNotNull(s);
+	        assertEquals("slot1", s.getId());
+  }
+	    
+  @Test
+  public void testHasFreeSlotWhenAllFree() {
+	    	// slot inizializzati sono liberi
+	        assertTrue(hold.hasFreeSlot());
+  }
+	 
+  @Test
+  public void testHasFreeSlotWhenAllOccupied() {
+	    	// i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
+	        for (int i = 1; i <= 4; i++) {
+	            hold.getSlot("slot" + i).setIsFree(false);
+	        }
+	        assertFalse(hold.hasFreeSlot());
+  }
+	    
+  @Test
+  public void testSetAndGetSlotPosition() {
+	        hold.setSlotPosition("slot1", "(2,2)");
+	        assertEquals("(2,2)", hold.getSlotPosition("slot1"));
+  }
+	   
+  @Test
+  public void testGetFirstFreeSlot() {
+	    	// assumiamo che la hold ritorni il primo slot libero
+	        hold.getSlot("slot1").setIsFree(false);
+	        ISlot free = hold.getFirstFreeSlot();
+	        assertNotNull(free);
+	        assertEquals("slot2", free.getId());
+  }
+	    
+  @Test
+  public void testGetFirstFreeSlotWhenFull() {
+	        for (int i = 1; i <= 4; i++) {
+	            hold.getSlot("slot" + i).setIsFree(false);
+	        }
+	        assertNull(hold.getFirstFreeSlot());
+  }
+</code>
 </pre>
+
+
 <h2>Project</h2> 
+<pre>
+<b>cargoHold:</b>
+
+In questa fase di progetto è già possibile sviluppare le entità non-attive identificate nei requisiti:
+
+• <span style="color:rgb(6, 181, 41);"><b><i>Slot</i></b></span> 
+  La classe Slot mantiene un ID che identifica univocamente l'area di parcheggio.
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Codice POJO</a></b>
+
+• <span style="color:rgb(6, 181, 41);"><b><i>Hold</i></b></span> 
+  La classe Hold rappresta la stiva dal punto di vista logico.
+  La stiva deve essere capace di esprimere la posizione degli Slot e dell'IOPort.
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Codice POJO</a></b>
+
+</pre>
 
 <h2>Testing</h2> 
+<pre>
+Piani di test sviluppati in relazione a <b>cargoHold</b>.
+
+• Testing su Slot: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/test/SlotTest.java'>Codice Test</a></b>
+
+• Testing su Hold: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/test/HoldTest.java'>Codice Test</a></b>
+
+</pre>
 
 <h2>Deployment</h2> 
 <pre>
-  Viene prodotto un jar relativo a componenti di dominio POJO raffiguranti la stiva:
+  Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
   <b>cargoHold-1.0.jar</b>
 </pre>
  
-<h2>Maintenance</h2> 
+<h2>Piano di lavoro</h2> 
  
 <!-- USEFUL
 <table style="width:100%" border="1">
