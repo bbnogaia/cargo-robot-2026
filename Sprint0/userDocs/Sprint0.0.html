@@ -282,13 +282,13 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 <b>Definizione dei Messaggi del Sistema con Qak:</b>
   <code>
     // Interazione IOPort Web-GUI <-> CargoService
-    Request requestLoad: requestLoad(NO_ARG)
+    Request requestLoad: requestLoad
     Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
     Dispatch messageDisplay : messageDisplay(MESSAGE) 
 
     // Interazione CargoService <-> CargoRobot
-    Request movecontainer : movecontainer(FROM_SLOT, TO_SLOT)
-    Reply movecompleted : movecompleted(RESULT) for movecontainer // RESULT = ok | failed
+    Request moveContainer : moveContainer(FROM_SLOT, TO_SLOT)
+    Reply moveCompleted : moveCompleted(RESULT) for moveContainer // RESULT = ok | failed
 
     // Interazione CargoRobot <-> RobotSmart
     Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
@@ -296,11 +296,21 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
     Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
 
     // Eventi e notifiche Hardware
-    Event sonardata : distance(D)
-    Event sonaralarm : sonaralarm(REASON)
+    Event sonarData : distance(D)
+    Event sonarAlarm : sonaralarm(REASON)
 
     // Interazione CargoRobot <-> ledcontroller (? DA DEFINIRE)
-    Dispatch updateled : updateled(STATE) // STATE = off | on
+    Dispatch updateLed : updateLed(STATE) // STATE = off | on
+
+    // Interazione CargoService <-> holdcontroller
+    Request getIOPortPosition : getIOPortPosition
+    Reply ioPortPosition : ioPortPosition(POS) for getIOPortPosition // POS = (x,y)
+
+    Request getSlotPosition : getSlotPosition
+    Reply slotPositionAvailable : slotPositionAvailable(SLOT_ID, POS) for getSlotPosition // SLOT_ID = 1 | 2 | 3 | 4 , POS = (x,y) 
+    Reply slotPositionFailed : slotPositionFailed for getSlotPosition
+
+    Dispatch changeSlotState : changeSlotState(SLOT_ID, STATE) // SLOT_ID = 1 | 2 | 3 | 4 , STATE = free | occupied 
   </code>
 </pre>
 
