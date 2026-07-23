@@ -1,0 +1,71 @@
+plugins {
+    // Rimesso solo java, jacoco ed eclipse (rimosso 'application')
+    id 'java'
+    id 'jacoco'
+    id 'eclipse'
+}
+
+//version '1.0'
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+}
+
+repositories {
+    mavenCentral()
+    flatDir {   dirs '../../unibolibs'    }
+}
+
+dependencies {
+
+    /* UNIBO ******************************* */
+    implementation name: 'uniboInterfaces'
+    implementation name: '2p301'
+    implementation name: 'unibo.basicomm23-1.0'
+    testImplementation 'junit:junit:4.13.2'
+
+}
+
+sourceSets {
+    main.java.srcDirs += 'src'
+    main.java.srcDirs += 'src/main/java'
+    main.java.srcDirs += 'src/main/kotlin'
+    main.java.srcDirs += 'src/main/resources'
+    test.java.srcDirs += 'src/main/java/test'         // test is specific
+    test.java.srcDirs += 'src/main/kotlin/test'
+}
+
+eclipse {
+    classpath {
+        sourceSets -= [sourceSets.main, sourceSets.test]
+    }
+}
+
+// Configurazione per la generazione della semplice libreria JAR
+jar {
+    println("building jar")
+    
+    // Mantiene l'inclusione dei sorgenti per consentire l'autocompletamento negli IDE
+    from sourceSets.main.allSource 
+    
+    // Include eventuali file .pl e .json presenti nella radice
+    from('./') {
+      include '*.pl'
+      include '*.json'
+    }
+}
+ 
+task dovesiamo {
+    println("projectDir= $projectDir")
+    println("buildDir  = $buildDir")
+}
+ 
+jacocoTestReport {
+    dependsOn test // Il report viene generato solo dopo l'esecuzione dei test
+
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+}
