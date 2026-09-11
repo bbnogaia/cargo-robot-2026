@@ -198,14 +198,15 @@ public interface ISlot {
 
 • <span style="color:red;"><b><i>cargorobot</i></b></span> 
   - Il componente che realizza le operazioni richieste relative al DDR. 
-  - Si compone di software fornito dal committente. Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della hold. 
+  - Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della hold. 
+  - Per l'esecuzione dei movimenti, utilizza come servizio esterno il software RobotSmart26.
   - È capace di comunicare e percepire messaggi ed eventi da altre entità.
 
 • <span style="color:red;"><b><i>webgui-ioport</i></b></span> 
   - Il componente che si interfaccia con l'utente.
   - In input un bottone, in output un display.
   - È capace di comunicare e percepire messaggi ed eventi da altre entità.
-
+ <!-- DA CANCELLARE?
 • <span style="color:red;"><b><i>holdcontroller</i></b></span> 
   - Il componente che si occuperà di gestire lo stato della stiva, tenendo traccia degli slot liberi/occupati 
   e della loro posizione.
@@ -214,34 +215,8 @@ public interface ISlot {
   - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “sonar”.
 
 • <span style="color:red;"><b><i>ledcontroller</i></b></span> 
-  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.
-
+  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.  -->
 </pre>
-<pre>
-<b>Domande per il committente:</b>
-<span style="color: cadetblue;">
-
-  Hold:
-- Secondo quale criterio vengono assegnati gli slot?
-- Necessaria la posizione d'accesso?
-
-IOPort:
-- Cosa si intende per "current state of the hold" da mostrare nel display?
-
-Sonar:
-- Viene fornito dal committente o deve essere realizzato da zero? (Il codice del PicoW)
-- Se viene fornito come comunica?
-- Che unità di misura utilizza?
-- DFREE viene descritto come un valore predefinito: quanto vale?
-
-Marker:
-- Il marker è un macro-componente? Viene fornito dal committente o deve essere realizzato da zero?
-- Viene descritto come “un dispositivo di marcatura che etichetta il container con un codice a barre identificativo e segnala 
-quando l'operazione di marcatura è completata”, quindi è un componente proattivo che comunica con il sistema? 
-</span>
-</pre>
-
-
  
 
 <h2>Problem Analysis</h2>
@@ -250,9 +225,9 @@ quando l'operazione di marcatura è completata”, quindi è un componente proat
 
 In relazione ai componenti non-attivi identificati in precedenza è bene specificare che:
 
-• (DA CONCORDARE?) La <b>hold</b> restituisce il primo slot libero.
+• La <b>hold</b> restituisce il primo slot libero.
 
-• (DA CONCORDARE?) Il DDR necessita unicamente della posizione degli <b>slot</b> (in coordinate robotiche).
+• Il DDR necessita unicamente della posizione degli <b>slot</b> (in coordinate robotiche).
 
 Questi componenti possono essere sviluppati come POJO Java.
 
@@ -261,9 +236,9 @@ Questi componenti possono essere sviluppati come POJO Java.
 <pre>
 <b>Componenti attivi: Utilizzo di Qak</b>
 
-Scegliamo di utilizzare il modello Qak per semplificare il ciclo di vita del sistema da sviluppare.
+Scegliamo di utilizzare il modello Qak (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
 Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
-Qak ci permette per colmare l'abstraction gap, garantendo uno sviluppo rapido e coerente.
+Qak ci permette per colmare l'abstraction gap tra la visione del dominio e i componenti software concreti, garantendo uno sviluppo rapido e coerente.
 
 A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 176, 210);"><b>nodi</b></span>:
 
@@ -273,17 +248,18 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 
 • Un nodo dedicato alla web-gui
 
-• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led
+• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led (PicoW)
 
-• (Ancora da concordare) Un nodo relativo al sistema di marker dei container
 </pre>
 
 <pre>
-<b>Definizione dei Messaggi del Sistema con Qak:</b>
+<b>Definizione Parziale dei Messaggi del Sistema con Qak:</b>
   <code>
     // Interazione IOPort Web-GUI <-> CargoService
     Request requestLoad: requestLoad
     Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
+  </code>
+  <!-- <code>
     Dispatch messageDisplay : messageDisplay(MESSAGE) 
 
     // Interazione CargoService <-> CargoRobot
@@ -311,7 +287,7 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
     Reply slotPositionFailed : slotPositionFailed for getSlotPosition
 
     Dispatch changeSlotState : changeSlotState(SLOT_ID, STATE) // SLOT_ID = 1 | 2 | 3 | 4 , STATE = free | occupied 
-  </code>
+  </code> -->
 </pre>
 
 <h2>Test plans</h2> 
