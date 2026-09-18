@@ -92,14 +92,53 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
 
 • <span style="color:rgb(255, 106, 0);"><b><i>cargorobot</i></b></span> rappresenta l’entità robotica che applica al DDR i servizi richiesti dai requisiti del committente.
 
-  Il <b><i>DDR</i></b> è fornito dal committente tramite software che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
+  Il <b><i>DDR</i></b> è fornito dal committente tramite software 'VirtualRobot26' che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
   Questo modello è progettato per essere facilmente adattabile ad un robot reale.
   <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa al Robot Virtuale</a></b>
-  
-  In particolare, faremo riferimento al servizio RobotSmart26 poichè capace di rappresentare la stiva tramite una mappa mentale 
-  e di pianificare come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
 
-  Dunque, RobotSmart26 ci permette di concordare la "forma" della stiva e di mappare eventuali ostacoli all'interno di essa.
+  Il committente rende dispoibili ulteriori componenti software dedicati al DDR.
+  In particolare, 'RobortSmart26' riesce ad adattarsi al contesto del problema in quanto sviluppato come un servizio capace di comunicare con altre entità.
+  Si adegua alle richieste del committente in quanto capace di rappresentare la stiva tramite una mappa mentale e di pianificare 
+  come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
+
+  Dalla documentazione si evince che la mappa utilizzata da 'RobotSmart26' rapprestenta già la stiva della compagnia marittima 
+  e non necessita di ulteriori ridimensionamenti. In caso di necessità è comunque possibile cambiarne la forma. 
+  L'unità di misura delle coordinate è data da "unità robotiche" su piano bidimensionale (X,Y); da ora in poi, faremo riferimento a questo dimensionamento.
+
+  Di seguito definiamo la classe <b>Position</b> come tipizzazione delle coordinate:
+<code>
+  public class Position {
+    private final int x;
+    private final int y;
+
+    public Position(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // restituisce il valore della coordinata X come intero
+    public int getX() {
+        return x;
+    }
+
+    // restituisce il valore della coordinata Y come intero
+    public int getY() {
+        return y;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        Position position = (Position) o;
+        return x == position.x && y == position.y;
+    }
+
+    @Override
+    // restituisce il valore delle coordinate come stringa (X,Y)
+    public String toString() {
+        return "(" + x + "," + y + ')';
+    }
+}
+</code>
 
   Nel complesso <b><i>cargorobot</i></b> è un’entità proattiva capace di ricevere/inviare messaggi ed eseguire movimenti sul DDR.
 
@@ -120,10 +159,10 @@ public interface IHold {
 
   //--IO-PORT:
     // setta la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    void setIOPortPosition(String p);
+    void setIOPortPosition(Position p);
 
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    String getIOPortPosition();
+    Position getIOPortPosition();
 
   //--SLOT:
     // restituisce lo slot identificato dal nome
@@ -131,12 +170,9 @@ public interface IHold {
 
     // verifica se esiste uno slot libero
     boolean hasFreeSlot();
-
-    // setta la posizione di uno slot in coordinate RobotSmart (X,Y)
-    void setSlotPosition(String slotId, String p);
     
     // restituisce la posizione dello slot in coordinate RobotSmart (X,Y)
-    String getSlotPosition(String slotId);
+    Position getSlotPosition(String slotId);
 
     // restituisce il primo slot libero.
     ISlot getFirstFreeSlot();
@@ -236,19 +272,20 @@ Questi componenti possono essere sviluppati come POJO Java.
 <pre>
 <b>Componenti attivi: Utilizzo di Qak</b>
 
-Scegliamo di utilizzare il modello Qak (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
-Il sistema presenterà diversi nodi computazionali capaci di fornire diversi servizi.
-Qak ci permette per colmare l'abstraction gap tra la visione del dominio e i componenti software concreti, garantendo uno sviluppo rapido e coerente.
+Scegliamo di descrivere il sistema tramite modello Qak (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
+Questo DSL ci consente di formalizzare il concetto di messaggio e di attore come servizio come segue: <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa a Qak</a></b>. 
+Inoltre, ci permette di colmare l'abstraction gap tra la visione del dominio e i componenti software concreti, garantendo uno sviluppo rapido e coerente.
 
 A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 176, 210);"><b>nodi</b></span>:
 
-• Un nodo relativo a cargorobot
+• Un nodo dedicato all'esecuzione dei sevizi software (VirtualRobot26, cargoservice, cargorobot, webgui-ioport)
 
-• Un nodo dedicato al sistema cargoservice
+• Un nodo fisico dedicato capace di gestire i componenti hardware quali sonar e led (PicoW)
 
-• Un nodo dedicato alla web-gui
+</pre>
 
-• Un nodo dedicato capace di gestire i componenti hardware quali sonar e led (PicoW)
+<pre>
+<b>Definizione dei QActor e dei contesti:</b>
 
 </pre>
 
@@ -256,8 +293,8 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 <b>Definizione Parziale dei Messaggi del Sistema con Qak:</b>
   <code>
     // Interazione IOPort Web-GUI <-> CargoService
-    Request requestLoad: requestLoad
-    Reply loadAnswer: loadAnswer(ANSWER) for requestLoad // ANSWER = slotId | "retrylater" | "rejected"
+    Request requestToLoad: requestToLoad
+    Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad // ANSWER = slotId | "retrylater" | "rejected"
   </code>
   <!-- <code>
     Dispatch messageDisplay : messageDisplay(MESSAGE) 
