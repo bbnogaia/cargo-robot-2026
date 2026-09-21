@@ -98,12 +98,13 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
 
   Il committente rende dispoibili ulteriori componenti software dedicati al DDR.
   In particolare, 'RobortSmart26' riesce ad adattarsi al contesto del problema in quanto sviluppato come un servizio capace di comunicare con altre entità.
-  Si adegua alle richieste del committente in quanto capace di rappresentare la stiva tramite una mappa mentale e di pianificare 
+  Si adegua alle richieste del committente poichè capace di rappresentare la stiva tramite una mappa mentale e di pianificare 
   come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
 
   Dalla documentazione si evince che la mappa utilizzata da 'RobotSmart26' rapprestenta già la stiva della compagnia marittima 
   e non necessita di ulteriori ridimensionamenti. In caso di necessità è comunque possibile cambiarne la forma. 
-  L'unità di misura delle coordinate è data da "unità robotiche" su piano bidimensionale (X,Y); da ora in poi, faremo riferimento a questo dimensionamento.
+  L'unità di misura delle coordinate (della mappa e di movimento) è in "unità robotiche" su piano bidimensionale (X,Y); 
+  da ora in poi, faremo riferimento a questo dimensionamento.
 
   Di seguito definiamo la classe <b>Position</b> come tipizzazione delle coordinate:
 <code>
@@ -149,8 +150,8 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
   - <b><i>IOPort</i></b> -- zona di carico dei container
   - <b><i>slot</i></b> -- come area di parcheggio
 
-  La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi.
-  Le coordinate di questi elementi sono espresse in unità robotiche (per un maggiore approfondimento consultare la documentazione).
+  <!-- La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi.
+  Le coordinate di questi elementi sono espresse in unità robotiche (per un maggiore approfondimento consultare la documentazione). -->
 
   Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
 
@@ -287,16 +288,42 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 <pre>
 <b>Definizione dei QActor e dei contesti:</b>
 
-</pre>
+Attraverso un Mock del sistema è già possibile definire gli attori in gioco e formalizzare alcuni comportamenti.
+Sulla base delle richieste del commitente, i due componenti software RobortSmart26 e cargorobot coincidono.
+Da ora in poi, nominare uno equivarrà a nominare l'altro.
 
+<code>
+System cargocompany
+
+
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+
+
+Context ctxcargocompany ip [ host="localhost" port=8040] 
+Context ctxrobotsmart ip [host="127.0.0.1" port=8050 ]
+
+//...
+
+ExternalQActor robotsmart context ctxrobotsmart
+
+//...
+
+QActor cargoservice context ctxcargocompany {
+
+//...
+
+QActor webgui_ioport context ctxcargocompany {
+
+//...
+</code>
+</pre>
+<!-- 
 <pre>
-<b>Definizione Parziale dei Messaggi del Sistema con Qak:</b>
   <code>
     // Interazione IOPort Web-GUI <-> CargoService
     Request requestToLoad: requestToLoad
     Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad // ANSWER = slotId | "retrylater" | "rejected"
-  </code>
-  <!-- <code>
     Dispatch messageDisplay : messageDisplay(MESSAGE) 
 
     // Interazione CargoService <-> CargoRobot
@@ -324,8 +351,8 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
     Reply slotPositionFailed : slotPositionFailed for getSlotPosition
 
     Dispatch changeSlotState : changeSlotState(SLOT_ID, STATE) // SLOT_ID = 1 | 2 | 3 | 4 , STATE = free | occupied 
-  </code> -->
-</pre>
+  </code>
+</pre> -->
 
 <h2>Test plans</h2> 
 <pre>
@@ -466,7 +493,7 @@ Piani di test sviluppati in relazione a <b>cargoHold</b>.
 
 <h2>Deployment</h2> 
 <pre>
-  Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
+ • Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
   <b>cargoHold-1.0.jar</b>
 </pre>
  

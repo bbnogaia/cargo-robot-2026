@@ -1,0 +1,124 @@
+System cargocompany
+
+
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+
+
+Context ctxcargocompany ip [ host="localhost" port=8040] 
+// Context ctxrobotsmart ip [host="127.0.0.1" port=8050 ]
+
+
+// ExternalQActor robotsmart context ctxrobotsmart
+
+/* -------------------------------------------------------------------------
+ * MOCK CARGO SERVICE: 
+ * 
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor cargoservice context ctxcargocompany {
+	
+	
+	//---STATE:INIT--------------------
+	State s0 initial{
+		println("$name | init ") color green	
+	}
+	Goto disengaged
+	
+	//---STATE: DISENGAGED---------------------
+	State disengaged{
+  
+		println("$name | disengaged") color magenta
+	
+	}
+	Transition t0
+		whenRequest requestToLoad ->  handleLoad
+		
+	//---STATE: LOAD---------------------
+	State handleLoad{
+		
+		onMsg( requestToLoad : requestToLoad(NOARGS) ){
+        [#
+        	var r = "1"
+        #]
+		/*
+		 * Simulazione comportamenti del sistema:
+		 * 1 = cargoservice restituisce ID dello slot assegnato
+		 * 2 = cargoservice restituisce retrylater
+		 * 3 = cargoservice restituisce rejected
+		 */
+        
+        if[# r == "1" #]{
+        	println("$name | load: succesfull") color magenta
+        	println("$name | load: engaged") color magenta
+        	replyTo requestToLoad with loadAnswer : loadAnswer(slot2)   
+        	delay 5000 	
+        }
+        if[# r == "2" #]{
+        	println("$name | load: retry later") color magenta
+        	replyTo requestToLoad with loadAnswer : loadAnswer(retrylater)   	
+        }
+        if[# r == "3" #]{
+        	println("$name | load: rejected") color magenta
+        	replyTo requestToLoad with loadAnswer : loadAnswer(rejected)   	
+        }
+        
+        
+     }
+	
+	}
+	Goto disengaged
+
+	
+}
+
+/* -------------------------------------------------------------------------
+ * MOCK WEB-GUI: 
+ * 
+ * -------------------------------------------------------------------------
+ */
+
+QActor webgui_ioport context ctxcargocompany {
+	
+	
+	//---STATE:INIT--------------------
+	State s0 initial{
+		println("$name | init ") color green	
+	}
+	Goto wait
+	
+	//---STATE: WAIT---------------------
+	State wait{
+  
+		println("$name | wait for action") color yellow
+		println("$name | request to load") color yellow
+		request cargoservice -m requestToLoad : requestToLoad(NOARGS)
+	}
+	Transition t0
+		whenReply loadAnswer -> handleAnswer
+	
+	//---STATE: ANSWER---------------------
+	State handleAnswer{
+  		onMsg( loadAnswer : loadAnswer(ANSWER) ){
+        [#
+        	var ans = payloadArg(0)
+        #]
+        
+        if[# ans.startsWith("slot") #]{
+         println("$name | success: $ans") color yellow 	
+        }
+        if[# ans == "retrylater" #]{
+         println("$name | retrylater") color yellow	
+        }
+        if[# ans == "rejected" #]{
+         println("$name | rejected") color yellow	
+        }
+        
+        } 
+		
+	}
+	//Goto wait
+}
+
+
