@@ -43,6 +43,7 @@ QActor cargoservice context ctxcargocompany {
         	var r = "1"
         #]
 		/*
+		 * Riceve una richiesta di carico ed elabora una risposta in base allo stato del sistema.
 		 * Simulazione comportamenti del sistema:
 		 * 1 = cargoservice restituisce ID dello slot assegnato
 		 * 2 = cargoservice restituisce retrylater
@@ -54,6 +55,9 @@ QActor cargoservice context ctxcargocompany {
         	println("$name | load: engaged") color magenta
         	replyTo requestToLoad with loadAnswer : loadAnswer(slot2)   
         	delay 5000 	
+        	/* 
+        	 * comanda cargobot e gestisce da cervello delle operazioni
+        	 */
         }
         if[# r == "2" #]{
         	println("$name | load: retry later") color magenta
@@ -92,6 +96,9 @@ QActor webgui_ioport context ctxcargocompany {
 	State wait{
   
 		println("$name | wait for action") color yellow
+		/*
+		 * simuliamo una richiesta di carico verso cargoservice
+		 */
 		println("$name | request to load") color yellow
 		request cargoservice -m requestToLoad : requestToLoad(NOARGS)
 	}
@@ -120,5 +127,4 @@ QActor webgui_ioport context ctxcargocompany {
 	}
 	//Goto wait
 }
-
 

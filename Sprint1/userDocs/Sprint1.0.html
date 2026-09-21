@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="css/mystyle.css">
+<script type="text/javascript" src="js/highlight-java-code.js" defer></script>
+<!--
+    <script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+    
+</head>
+   
+<title>CargoBot26</title></head>
+    
+
+<body>
+<div id="top">
+<h1>CargoBot26: SPRINT1</h1>
+</div>  
+
+<div class="body">  
+
+<h2>Introduction</h2>
+<pre>
+<b>GOAL</b>: 
+- Progettare ed implementare la logica principale del sistema
+- Sviluppare i componenti cargoservice e cargorobot e le loro logiche
+</pre>
+
+<h2>Requirements</h2>
+<!-- <div class="remark"> -->
+<pre>
+
+<img src="./img/req.jpg" alt="emiglio" width="50%" height="50%">
+
+In the picture above:
+
+• The <b>slots1-4</b> depict the hold areas reserved to store one <i>container</i> each,
+
+• The <b>slot5</b> depicts an area, where the <i>cargorobot</i> must temporarily store a container, before to place it in one of the
+  <i>slots1-4</i>. During temporary storage, a 'marker' device labels the container with an identification barcode and signals when this marking
+  activity is completed.
+
+The company asks us to build service named <b>cargoservice</b> that should work as follows.
+
+The <i>cargoservice</i> is able to receive a <b>request to load</b> a container sent by some customer by using the <i>pushbutton</i> of the <i>IOPort</i>.
+
+• It sends the answer retrylater, if the <b>IOPort</b> is currently occupied by a container or if the system is <i>Out of service</i>
+
+• It rejects the request when the hold is already full, i.e. the <b>slots1-4</b> are already occupied.
+
+• Otherwise, it considers the system as <b>engaged</b>, detects a free slot and returns as answer the name of such a reserved slot.
+  While engaged, the system must blink a Led.
+
+When the <i>request to load</i> is accepted, the customer must move the container in the <i>sensor</i> area within prefixed amount of time (e.g. 30
+secs), otherwise the systems becomes <b>disengaged</b>. Then, the <i>cargoservice</i> uses the <i>cargorobot</i> to move the container from the
+<i>IOPort</i> to the <b>slot5</b> (for marking the container) and then to the reserved slot.
+
+</pre>
+  
+
+<h2>Requirement Analysis</h2>
+
+<pre>
+
+</pre>
+ 
+<h2>Problem Analysis</h2>
+<pre>
+
+</pre>
+
+<h2>Test plans</h2> 
+<pre>
+  
+</pre>
+
+<h2>Project</h2> 
+<pre>
+
+</pre>
+
+<h2>Testing</h2> 
+<pre>
+
+</pre>
+
+<h2>Deployment</h2> 
+<pre>
+
+</pre>
+
+ 
+<!-- USEFUL
+<table style="width:100%" border="1">
+<tr>
+<td style="width:50%">
+</td>
+<td></td>
+</tr>
+</table>
+-->
+	      	
+<br/><br/> 	
+</div>   
+
+<div style="background-color:rgba(86, 56, 253, 0.9); width:60%; text-align:left; color:white; padding:15px;">
+    <h3>Team</h3>
+    <p>
+        <strong>Alessandro Quaranta</strong> - alessandro.quaranta@studio.unibo.it<br>
+        <strong>Gaia Verzelli</strong> - gaia.verzelli@studio.unibo.it
+    </p>
+    <p>
+        <strong>Project GitHub repository:</strong><br>
+        <a href="https://github.com/bbnogaia/cargo-robot-2026" style="color:white;">
+            https://github.com/bbnogaia/cargo-robot-2026
+        </a>
+    </p>
+
+    <p>
+        <strong>Student GitHub repository:</strong><br>
+        <a href="https://github.com/alequaranta/iss2026quaranta" style="color:white;">
+            https://github.com/alequaranta/iss2026quaranta
+        </a>
+    </p>
+    <img src="./img/alessandro.jpg" alt="alessandro" width="15%" height="15%">
+    <img src="./img/gaia.jpg" alt="gaia" width="15%" height="15%">
+</div>
+</body>
+</html>

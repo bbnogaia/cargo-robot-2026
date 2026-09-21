@@ -26,6 +26,7 @@
 - Chiarire i requisiti del committente e formalizzarli. 
 - Si definisce l'architettura logica iniziale, integrando elementi esistenti e nuovi con un relativo piano di testing. 
 - Si sviluppa un primo pacchetto jar che definisce gli elementi non-attivi del progetto.
+- Si sviluppa un primo mock eseguibile del sistema.
 - Si stabilisce il piano di lavoro con scadenze e Sprint successivi.
 </pre>
 
@@ -101,9 +102,9 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
   Si adegua alle richieste del committente poichè capace di rappresentare la stiva tramite una mappa mentale e di pianificare 
   come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
 
-  Dalla documentazione si evince che la mappa utilizzata da 'RobotSmart26' rapprestenta già la stiva della compagnia marittima 
+  Dalla documentazione si evince che la mappa utilizzata da 'RobotSmart26' rappresenta già la stiva della compagnia marittima 
   e non necessita di ulteriori ridimensionamenti. In caso di necessità è comunque possibile cambiarne la forma. 
-  L'unità di misura delle coordinate (della mappa e di movimento) è in "unità robotiche" su piano bidimensionale (X,Y); 
+  L'unità di misura delle coordinate (della mappa e di movimento) sono in "unità robotiche" su piano bidimensionale (X,Y); 
   da ora in poi, faremo riferimento a questo dimensionamento.
 
   Di seguito definiamo la classe <b>Position</b> come tipizzazione delle coordinate:
@@ -288,7 +289,7 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 <pre>
 <b>Definizione dei QActor e dei contesti:</b>
 
-Attraverso un Mock del sistema è già possibile definire gli attori in gioco e formalizzare alcuni comportamenti.
+Attraverso un mock del sistema è già possibile definire gli attori in gioco e formalizzare alcuni comportamenti.
 Sulla base delle richieste del commitente, i due componenti software RobortSmart26 e cargorobot coincidono.
 Da ora in poi, nominare uno equivarrà a nominare l'altro.
 
@@ -466,18 +467,27 @@ QActor webgui_ioport context ctxcargocompany {
 
 <h2>Project</h2> 
 <pre>
-<b>cargoHold:</b>
+• <b>cargoHold:</b>
 
 In questa fase di progetto è già possibile sviluppare le entità non-attive identificate nei requisiti:
 
+• <span style="color:rgb(6, 181, 41);"><b><i>Position</i></b></span> 
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Codice Position</a></b>
+
 • <span style="color:rgb(6, 181, 41);"><b><i>Slot</i></b></span> 
   La classe Slot mantiene un ID che identifica univocamente l'area di parcheggio.
-  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Codice POJO</a></b>
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Codice POJO</a></b>
 
 • <span style="color:rgb(6, 181, 41);"><b><i>Hold</i></b></span> 
   La classe Hold rappresta la stiva dal punto di vista logico.
   La stiva deve essere capace di esprimere la posizione degli Slot e dell'IOPort.
-  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/feature/sprint0/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Codice POJO</a></b>
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Codice POJO</a></b>
+
+• <b>Mock del sistema:</b>
+
+Come anticipato è possibile sviluppare una prima versione mock del sistema capace di mostrare le interazioni tra le entità webgui-ioport e cargoservice.
+Non si avanzano ipotesi sulla parte software/hardware legata al sonar.
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/mockcargobot26qak/src/mockcargobot.qak'>mockcargobot.qak</a></b>
 
 </pre>
 
@@ -495,17 +505,19 @@ Piani di test sviluppati in relazione a <b>cargoHold</b>.
 <pre>
  • Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
   <b>cargoHold-1.0.jar</b>
+ • Viene prodotto un mock eseguibile del sistema:
+  <b>mockcargorobot.qak</b>
 </pre>
  
 <h2>Piano di lavoro</h2> 
 <pre>
 • <span style="color:red;"><b><i>SPRINT1</i></b></span> 
   - Progettare e implementare la logica principale del sistema, ovvero la ricezione di una richiesta di carico e la sua esecuzione tramite il robot.
-  - [ Rif: cargoservice, cargorobot, holdcontroller ]
+  - [ Rif: cargoservice, cargorobot ]
   - [ Tempo stimato: 40 ore-uomo] 
 • <span style="color:red;"><b><i>SPRINT2</i></b></span> 
   - Realizzazione e implementazione della logica relativa ai componenti fisici che dovranno interagire con il sistema
-  - [ Rif: PicoW, sonarcontroller, ledcontroller ]
+  - [ Rif: PicoW (sonar)]
   - [ Tempo stimato: 35 ore-uomo] 
 • <span style="color:red;"><b><i>SPRINT3</i></b></span> 
   - Sviluppare la Web-GUI e verificare il corretto funzionamento con le interazioni utente.
