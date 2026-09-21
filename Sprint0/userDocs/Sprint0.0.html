@@ -270,7 +270,7 @@ Questi componenti possono essere sviluppati come POJO Java.
 </pre>
 
 <pre>
-<b>Componenti attivi: Utilizzo di Qak</b>
+<b>Componenti attivi e utilizzo di Qak:</b>
 
 Scegliamo di descrivere il sistema tramite modello Qak (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
 Questo DSL ci consente di formalizzare il concetto di messaggio e di attore come servizio come segue: <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa a Qak</a></b>. 
@@ -369,60 +369,69 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
   private IHold hold;
 
   @Before
-  public void setUp() {
-	  hold = null;
+    public void setUp() {
+        hold = new Hold();
   }
-	 
+
   @Test
-  public void testIOPortPositionSetAndGet() {
-	        hold.setIOPortPosition("(0,0)");
-	        assertEquals("(0,0)", hold.getIOPortPosition());
+    public void testIOPortPositionSetAndGet() {
+        hold.setIOPortPosition(new Position(0, 0));
+        assertEquals(new Position(0, 0), hold.getIOPortPosition());
   }
-	    
+
   @Test
-  public void testGetSlot() {
-	    	// slot inizializzati da 1 a 5
-	        ISlot s = hold.getSlot("slot1");
-	        assertNotNull(s);
-	        assertEquals("slot1", s.getId());
+    public void testGetSlot() {
+        // slot inizializzati da 1 a 5
+        ISlot s = hold.getSlot("slot1");
+        assertNotNull(s);
+        assertEquals("slot1", s.getId());
   }
-	    
+
   @Test
-  public void testHasFreeSlotWhenAllFree() {
-	    	// slot inizializzati sono liberi
-	        assertTrue(hold.hasFreeSlot());
+    public void testHasFreeSlotWhenAllFree() {
+        // slot inizializzati sono liberi
+        assertTrue(hold.hasFreeSlot());
   }
-	 
+
   @Test
-  public void testHasFreeSlotWhenAllOccupied() {
-	    	// i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
-	        for (int i = 1; i <= 4; i++) {
-	            hold.getSlot("slot" + i).setIsFree(false);
-	        }
-	        assertFalse(hold.hasFreeSlot());
+    public void testHasFreeSlotWhenAllOccupied() {
+        // i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
+        for (int i = 1; i <= 4; i++) {
+            hold.getSlot("slot" + i).setIsFree(false);
+        }
+        assertFalse(hold.hasFreeSlot());
   }
-	    
+
   @Test
-  public void testSetAndGetSlotPosition() {
-	        hold.setSlotPosition("slot1", "(2,2)");
-	        assertEquals("(2,2)", hold.getSlotPosition("slot1"));
+    public void testSlotPositions() {
+        // le posizioni degli slot sono inizializzate direttamente dalla Hold
+        assertEquals(new Position(1, 1), hold.getSlotPosition("slot1"));
+        assertEquals(new Position(1, 4), hold.getSlotPosition("slot2"));
+        assertEquals(new Position(3, 1), hold.getSlotPosition("slot3"));
+        assertEquals(new Position(3, 4), hold.getSlotPosition("slot4"));
+        assertEquals(new Position(2, 5), hold.getSlotPosition("slot5"));
   }
-	   
+
   @Test
-  public void testGetFirstFreeSlot() {
-	    	// assumiamo che la hold ritorni il primo slot libero
-	        hold.getSlot("slot1").setIsFree(false);
-	        ISlot free = hold.getFirstFreeSlot();
-	        assertNotNull(free);
-	        assertEquals("slot2", free.getId());
+    public void testGetSlotPositionUnknownSlot() {
+        assertNull(hold.getSlotPosition("slot99"));
   }
-	    
+
   @Test
-  public void testGetFirstFreeSlotWhenFull() {
-	        for (int i = 1; i <= 4; i++) {
-	            hold.getSlot("slot" + i).setIsFree(false);
-	        }
-	        assertNull(hold.getFirstFreeSlot());
+    public void testGetFirstFreeSlot() {
+        // assumiamo che la hold ritorni il primo slot libero
+        hold.getSlot("slot1").setIsFree(false);
+        ISlot free = hold.getFirstFreeSlot();
+        assertNotNull(free);
+        assertEquals("slot2", free.getId());
+  }
+
+  @Test
+    public void testGetFirstFreeSlotWhenFull() {
+        for (int i = 1; i <= 4; i++) {
+            hold.getSlot("slot" + i).setIsFree(false);
+        }
+        assertNull(hold.getFirstFreeSlot());
   }
 </code>
 </pre>

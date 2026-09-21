@@ -4,10 +4,10 @@ public interface IHold {
 	
 	// -- IO-PORT:
     // setta la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    void setIOPortPosition(String p);
+    void setIOPortPosition(Position p);
     
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    String getIOPortPosition();
+    Position getIOPortPosition();
 
     // -- SLOT:
     // restituisce lo slot identificato dal nome
@@ -16,11 +16,8 @@ public interface IHold {
     // verifica se esiste uno slot libero
     boolean hasFreeSlot();
     
-    // setta la posizione di uno slot in coordinate RobotSmart (X,Y)
-    void setSlotPosition(String slotId, String p);
-    
     // restituisce la posizione dello slot in coordinate RobotSmart (X,Y)
-    String getSlotPosition(String slotId);
+    Position getSlotPosition(String slotId);
     
     // restituisce il primo slot libero
     ISlot getFirstFreeSlot();
