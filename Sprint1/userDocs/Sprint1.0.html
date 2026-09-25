@@ -56,17 +56,82 @@ When the <i>request to load</i> is accepted, the customer must move the containe
 secs), otherwise the systems becomes <b>disengaged</b>. Then, the <i>cargoservice</i> uses the <i>cargorobot</i> to move the container from the
 <i>IOPort</i> to the <b>slot5</b> (for marking the container) and then to the reserved slot.
 
+The service must also show on the <i>display</i> on the <i>IOPort</i>:
+
+• the current state of the <i>hold</i>
+
+• the message <b>'Service working'</b>, when it is all is going well
+
+• the message <b>'Out of service'</b> if the <i>sonar sensor</i> measures a distance D &gt; DFREE for at least 3 secs 
+  (perhaps a failure of the <i>sonar</i>).
+
 </pre>
   
 
 <h2>Requirement Analysis</h2>
 
 <pre>
+   
+ Nello Sprint0 sono stati indivituati e sviluppati i componenti software POJO del sistema essenziali per i servizi cargoservice e cargorobot.
+
+ •  <span style="color:red;"><b>cargoservice</b></span>
+    Si occupa della logica di business relativa alle richieste di movimentazione e allocazione dei container.
+    Il componente dovrà comunicare con le seguenti entità:
+        - <b>webgui-ioport</b>
+        - <b>cargorobot</b>
+        - <b>sonar</b> 
+
+•  <span style="color:red;"><b>cargorobot</b></span>
+    Realizza le operazioni relative al DDR. Per l'esecuzione dei movimenti, utilizza come servizio esterno il software RobotSmart26.
+    Il componente dovrà comunicare con le seguenti entità:
+        - <b>cargoservice</b>
 
 </pre>
  
 <h2>Problem Analysis</h2>
 <pre>
+
+Di seguito vengono elencati i messaggi utilizzati dai due servizi per interagire con i soggetti sopra menzionati.
+
+ •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &lt;---&gt; webgui-ioport</b></span>
+ <code>
+    Request requestToLoad : requestToLoad(NOARGS)
+    Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+
+    Dispatch messageDisplay : messageDisplay(MESSAGE) 
+ </code>
+
+    Ricevuta una richiesta di carico, <b>cargoservice</b>
+    - controlla che il sistema sia funzionante
+    - controlla che il sistema sia disengaged
+    - controlla che non sia già presente un container nella "sensor area"
+    - verifica la presenza di almeno uno slot libero
+        > se libero, riserva lo slot
+        > altrimenti, rifiuta la richiesta
+    - avvia un timer di 30 secondi entro i quali dovrà essere spostato il container nella "sensor area"
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &lt;---&gt; cargorobot (robotsmart26)</b></span>
+ <code>
+    Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
+    Reply moverobotdone : moverobotdone(ARG) for moverobot 
+    Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
+ </code>
+
+    <b>cargoservice</b> funga da mente per i movimenti del <b>cargorobot</b>, la logica segue questi step:
+    - recupera il container dalla IO-PORT
+    - sposta il container presso lo slot5 dove il marker impiegherà 5 secondi ad etichettarlo
+    - sposta il container presso lo slot riservato
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &lt;---&gt; sonar </b></span>
+ <code>
+    Event sonarData : distance(D)
+    Event sonarAlarm : sonaralarm(REASON)
+    Dispatch updateLed : updateLed(STATE) // STATE = off | on
+ </code>
+
+    Le misurazioni del <b>sonar</b> sono impattanti in due scenari:
+    - <b>cargoservice</b> controlla se presente un container nella "sensor area"
+    - <b>cargoservice</b> riceve una distanta maggiore di DFREE per più di 3 secondi
 
 </pre>
 
