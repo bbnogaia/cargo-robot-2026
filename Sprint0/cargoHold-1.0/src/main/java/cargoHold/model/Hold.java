@@ -17,7 +17,7 @@ public class Hold implements IHold {
         // inizializzazione degli slot: da 1 a 5 come indicato nei requisiti (tutti liberi)
         for (int i = 1; i <= 5; i++) {
             String slotId = "slot" + i;
-            slots.put(slotId, new Slot(slotId));
+            slots.put(slotId, new Slot(slotId)); // stato iniziale: FREE
         }
 
         // inizializzazione delle posizioni degli slot da requisiti (coordinate RobotSmart)
@@ -60,10 +60,10 @@ public class Hold implements IHold {
 
     @Override
     public ISlot getFirstFreeSlot() {
-        // il primo slot libero tra slot1 e slot4
+        // il primo slot libero (FREE) tra slot1 e slot4
         for (int i = 1; i <= 4; i++) {
             ISlot slot = slots.get("slot" + i);
-            if (slot != null && slot.getIsFree()) {
+            if (slot != null && slot.getSlotStatus() == SlotStatus.FREE) {
                 return slot;
             }
         }

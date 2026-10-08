@@ -1,43 +1,41 @@
 package main.java.cargoHold.model;
 
-public class Slot implements ISlot{
-	
+public class Slot implements ISlot {
+
 	private String id;
-	private boolean isFree;
+	private SlotStatus status;
 
-		// costruttore principale
-		public Slot(String id, boolean isFree) {
-		        this.id = id;
-		        this.isFree = isFree;
-		}
+	// costruttore principale
+	public Slot(String id, SlotStatus status) {
+		this.id = id;
+		this.status = status;
+	}
 
-		// costruttore di default (imposta lo slot come libero inizialmente)
-		public Slot(String id) {
-		        this(id, true);
-		}
+	// costruttore di default (lo slot è inizialmente libero)
+	public Slot(String id) {
+		this(id, SlotStatus.FREE);
+	}
 
-		@Override
-		public String getId() {
-		     return this.id;
-		}
-		
-		@Override
-		public boolean getIsFree() {
-			return this.isFree;
-			
-		}
+	@Override
+	public String getId() {
+		return this.id;
+	}
 
-	    @Override
-		public void setIsFree(boolean v) {
-		        this.isFree = v;
-		}
+	@Override
+	public SlotStatus getSlotStatus() {
+		return this.status;
+	}
 
-		@Override
-		public String toString() {
-		        return "Slot{" +
-		                "id='" + id + '\'' +
-		                ", isFree=" + isFree +
-		                '}';
-		 }
-		
+	@Override
+	public void setSlotStatus(SlotStatus status) {
+		this.status = status;
+	}
+
+	@Override
+	public String toString() {
+		return "Slot{" +
+				"id='" + id + '\'' +
+				", status=" + status +
+				'}';
+	}
 }

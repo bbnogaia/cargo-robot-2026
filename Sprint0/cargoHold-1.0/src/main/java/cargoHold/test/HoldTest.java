@@ -12,6 +12,7 @@ import main.java.cargoHold.model.Hold;
 import main.java.cargoHold.model.IHold;
 import main.java.cargoHold.model.ISlot;
 import main.java.cargoHold.model.Position;
+import main.java.cargoHold.model.SlotStatus;
 
 public class HoldTest {
 
@@ -37,6 +38,13 @@ public class HoldTest {
     }
 
     @Test
+    public void testInitialSlotsAreFree() {
+        for (int i = 1; i <= 5; i++) {
+            assertEquals(SlotStatus.FREE, hold.getSlot("slot" + i).getSlotStatus());
+        }
+    }
+
+    @Test
     public void testHasFreeSlotWhenAllFree() {
         // slot inizializzati sono liberi
         assertTrue(hold.hasFreeSlot());
@@ -46,7 +54,16 @@ public class HoldTest {
     public void testHasFreeSlotWhenAllOccupied() {
         // i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
         for (int i = 1; i <= 4; i++) {
-            hold.getSlot("slot" + i).setIsFree(false);
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
+        }
+        assertFalse(hold.hasFreeSlot());
+    }
+
+    @Test
+    public void testHasFreeSlotWhenAllReserved() {
+        // uno slot RESERVED non è considerato libero
+        for (int i = 1; i <= 4; i++) {
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.RESERVED);
         }
         assertFalse(hold.hasFreeSlot());
     }
@@ -68,17 +85,27 @@ public class HoldTest {
 
     @Test
     public void testGetFirstFreeSlot() {
-        // assumiamo che la hold ritorni il primo slot libero
-        hold.getSlot("slot1").setIsFree(false);
+        // la hold ritorna il primo slot libero
+        hold.getSlot("slot1").setSlotStatus(SlotStatus.OCCUPIED);
         ISlot free = hold.getFirstFreeSlot();
         assertNotNull(free);
         assertEquals("slot2", free.getId());
     }
 
     @Test
+    public void testGetFirstFreeSlotSkipsReserved() {
+        // gli slot RESERVED vengono saltati
+        hold.getSlot("slot1").setSlotStatus(SlotStatus.RESERVED);
+        hold.getSlot("slot2").setSlotStatus(SlotStatus.OCCUPIED);
+        ISlot free = hold.getFirstFreeSlot();
+        assertNotNull(free);
+        assertEquals("slot3", free.getId());
+    }
+
+    @Test
     public void testGetFirstFreeSlotWhenFull() {
         for (int i = 1; i <= 4; i++) {
-            hold.getSlot("slot" + i).setIsFree(false);
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
         }
         assertNull(hold.getFirstFreeSlot());
     }

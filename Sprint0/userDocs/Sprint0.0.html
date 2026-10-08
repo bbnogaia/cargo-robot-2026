@@ -227,7 +227,8 @@ public enum SlotStatus {
   OCCUPIED,
   RESERVED
 }
-
+</code>
+<code>
 public interface ISlot {
 
     // restituisce l'id dello slot
@@ -318,75 +319,6 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 
 </pre>
 
-<!-- <pre>
-<b>Definizione dei QActor e dei contesti:</b>
-
-Attraverso un mock del sistema è già possibile definire gli attori in gioco e formalizzare alcuni comportamenti.
-Sulla base delle richieste del commitente, i due componenti software RobortSmart26 e cargorobot coincidono.
-Da ora in poi, nominare uno equivarrà a nominare l'altro.
-
-<code>
-System cargocompany
-
-
-Request requestToLoad : requestToLoad(NOARGS)
-Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
-
-
-Context ctxcargocompany ip [ host="localhost" port=8040] 
-Context ctxrobotsmart ip [host="127.0.0.1" port=8050 ]
-
-//...
-
-ExternalQActor robotsmart context ctxrobotsmart
-
-//...
-
-QActor cargoservice context ctxcargocompany {
-
-//...
-
-QActor webgui_ioport context ctxcargocompany {
-
-//...
-</code>
-</pre> -->
-<!-- 
-<pre>
-  <code>
-    // Interazione IOPort Web-GUI <-> CargoService
-    Request requestToLoad: requestToLoad
-    Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad // ANSWER = slotId | "retrylater" | "rejected"
-    Dispatch messageDisplay : messageDisplay(MESSAGE) 
-
-    // Interazione CargoService <-> CargoRobot
-    Request moveContainer : moveContainer(FROM_SLOT, TO_SLOT)
-    Reply moveCompleted : moveCompleted(RESULT) for moveContainer // RESULT = ok | failed
-
-    // Interazione CargoRobot <-> RobotSmart
-    Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
-    Reply moverobotdone : moverobotdone(ARG) for moverobot 
-    Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
-
-    // Eventi e notifiche Hardware
-    Event sonarData : distance(D)
-    Event sonarAlarm : sonaralarm(REASON)
-
-    // Interazione CargoRobot <-> ledcontroller (? DA DEFINIRE)
-    Dispatch updateLed : updateLed(STATE) // STATE = off | on
-
-    // Interazione CargoService <-> holdcontroller
-    Request getIOPortPosition : getIOPortPosition
-    Reply ioPortPosition : ioPortPosition(POS) for getIOPortPosition // POS = (x,y)
-
-    Request getSlotPosition : getSlotPosition
-    Reply slotPositionAvailable : slotPositionAvailable(SLOT_ID, POS) for getSlotPosition // SLOT_ID = 1 | 2 | 3 | 4 , POS = (x,y) 
-    Reply slotPositionFailed : slotPositionFailed for getSlotPosition
-
-    Dispatch changeSlotState : changeSlotState(SLOT_ID, STATE) // SLOT_ID = 1 | 2 | 3 | 4 , STATE = free | occupied 
-  </code>
-</pre> -->
-
 <h2>Test plans</h2> 
 <pre>
 <b>Componenti non-attivi:</b>
@@ -394,33 +326,33 @@ QActor webgui_ioport context ctxcargocompany {
 • Slot:
 <code>
   private ISlot slot;
-	
+
   @Before
   public void setUp() {
     slot = null;
   }
-	
+
   @Test
   public void testGetId() {
     assertEquals("slot1", slot.getId());
   }
- 
+
   @Test
   public void testDefaultIsFree() {
         // uno slot appena creato è libero di default
-        assertTrue(slot.getIsFree());
+        assertEquals(SlotStatus.FREE, slot.getSlotStatus());
   }
- 
+
   @Test
   public void testSetIsOccupied() {
-        slot.setIsFree(false);
-        assertFalse(slot.getIsFree());
+        slot.setSlotStatus(SlotStatus.OCCUPIED);
+        assertEquals(SlotStatus.OCCUPIED, slot.getSlotStatus());
   }
-    
+
   @Test
   public void testSetIsFree() {
-        slot.setIsFree(true);
-        assertTrue(slot.getIsFree());
+        slot.setSlotStatus(SlotStatus.FREE);
+        assertEquals(SlotStatus.FREE, slot.getSlotStatus());
   }
 </code>
 
@@ -457,7 +389,7 @@ QActor webgui_ioport context ctxcargocompany {
     public void testHasFreeSlotWhenAllOccupied() {
         // i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
         for (int i = 1; i <= 4; i++) {
-            hold.getSlot("slot" + i).setIsFree(false);
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
         }
         assertFalse(hold.hasFreeSlot());
   }
@@ -480,7 +412,7 @@ QActor webgui_ioport context ctxcargocompany {
   @Test
     public void testGetFirstFreeSlot() {
         // assumiamo che la hold ritorni il primo slot libero
-        hold.getSlot("slot1").setIsFree(false);
+        hold.getSlot("slot1").setSlotStatus(SlotStatus.OCCUPIED);
         ISlot free = hold.getFirstFreeSlot();
         assertNotNull(free);
         assertEquals("slot2", free.getId());
@@ -489,7 +421,7 @@ QActor webgui_ioport context ctxcargocompany {
   @Test
     public void testGetFirstFreeSlotWhenFull() {
         for (int i = 1; i <= 4; i++) {
-            hold.getSlot("slot" + i).setIsFree(false);
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
         }
         assertNull(hold.getFirstFreeSlot());
   }
@@ -514,13 +446,6 @@ In questa fase di progetto è già possibile sviluppare le entità non-attive id
   La classe Hold rappresta la stiva dal punto di vista logico.
   La stiva deve essere capace di esprimere la posizione degli Slot e dell'IOPort.
   <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Codice POJO</a></b>
-
-<!-- • <b>Mock del sistema:</b>
-
-Come anticipato è possibile sviluppare una prima versione mock del sistema capace di mostrare le interazioni tra le entità webgui-ioport e cargoservice.
-Non si avanzano ipotesi sulla parte software/hardware legata al sonar.
-  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/mockcargobot26qak/src/mockcargobot.qak'>mockcargobot.qak</a></b> -->
-
 </pre>
 
 <h2>Testing</h2> 
@@ -537,8 +462,6 @@ Piani di test sviluppati in relazione a <b>cargoHold</b>.
 <pre>
  • Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
   <b>cargoHold-1.0.jar</b>
- <!-- • Viene prodotto un mock eseguibile del sistema:
-  <b>mockcargorobot.qak</b> -->
 </pre>
  
 <h2>Piano di lavoro</h2> 
