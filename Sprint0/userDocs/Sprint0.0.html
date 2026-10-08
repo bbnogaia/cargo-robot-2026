@@ -24,9 +24,7 @@
 <pre>
 <b>GOAL</b>: 
 - Chiarire i requisiti del committente e formalizzarli. 
-- Si definisce l'architettura logica iniziale, integrando elementi esistenti e nuovi con un relativo piano di testing. 
 - Si sviluppa un primo pacchetto jar che definisce gli elementi non-attivi del progetto.
-- Si sviluppa un primo mock eseguibile del sistema.
 - Si stabilisce il piano di lavoro con scadenze e Sprint successivi.
 </pre>
 
@@ -154,6 +152,39 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
   <!-- La stiva potrebbe presentare diversi ostacoli. Non è sufficiente conoscere "dove si trova lo slot", ma anche da quale lato il DDR può accedervi.
   Le coordinate di questi elementi sono espresse in unità robotiche (per un maggiore approfondimento consultare la documentazione). -->
 
+  Dai requisiti si evince che è necessario formalizzare un'associazione tra il nome identificativo di uno slot (slotId) e la sua posizione all'interno della mappa mentale di robotsmart.
+  Di seguito viene mostrata la corrispondenza tra la stringa che identifica lo slot e la sua posizione in coordinate robotiche:
+  <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stringa Identificativa (Slot)</th>
+      <th style="padding: 8px;">Posizione / Coordinate Robotiche (X, Y)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">slot1</td>
+      <td style="padding: 8px;">(1, 1)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot2</td>
+      <td style="padding: 8px;">(1, 4)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot3</td>
+      <td style="padding: 8px;">(3, 1)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot4</td>
+      <td style="padding: 8px;">(3, 4)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot5</td>
+      <td style="padding: 8px;">(2, 5)</td>
+    </tr>
+  </tbody>
+</table>
+
   Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
 
 <code>
@@ -184,22 +215,29 @@ public interface IHold {
 
 • Uno <span style="color:rgb(255, 106, 0);"><b><i>slot</i></b></span> rappresenta una area di parcheggio di container all’interno della <b><i>hold</i></b>.
 
+  Dai requisiti emerge che ogni slot può assumere tre distinti stati: occupato, libero e riservato.
+
   Gli <b><i>slot</i></b> sono in totale cinque. Lo "<b><i>slot5</i></b>" è riservato al processo di etichettatura di un container. 
   Anche questa entità non ha alcun comportamento proattivo, ragion per cui verrà modellata come un POJO. L’area rappresentata da uno <b><i>slot</i></b> non è mobile; 
   le sue coordinate sono strettamente dipendenti dalla <b><i>hold</i></b>.
 
 <code>
+public enum SlotStatus {
+  FREE,
+  OCCUPIED,
+  RESERVED
+}
+
 public interface ISlot {
 
     // restituisce l'id dello slot
     String getId();
 
-    // restituisce se lo slot è libero
-    boolean getIsFree();
+    // restituisce lo stato dello slot
+    SlotStatus getSlotStatus();
 
-    // setta lo slot
-    void setIsFree(boolean v);
-
+    // imposta lo stato dello slot
+    void setSlotStatus(SlotStatus status);
 }
 </code>
 
@@ -244,16 +282,10 @@ public interface ISlot {
   - Il componente che si interfaccia con l'utente.
   - In input un bottone, in output un display.
   - È capace di comunicare e percepire messaggi ed eventi da altre entità.
- <!-- DA CANCELLARE?
-• <span style="color:red;"><b><i>holdcontroller</i></b></span> 
-  - Il componente che si occuperà di gestire lo stato della stiva, tenendo traccia degli slot liberi/occupati 
-  e della loro posizione.
 
-• <span style="color:red;"><b><i>sonarcontroller</i></b></span> 
-  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “sonar”.
-
-• <span style="color:red;"><b><i>ledcontroller</i></b></span> 
-  - Il componente che si occuperà di interfacciarsi con il dispositivo fisico “LED”.  -->
+• <span style="color:red;"><b><i>sonar-led</i></b></span> 
+  - Rappresenta il componente hardware PicoW.
+  - Gestisce sia le funzionalità del sonar che quelle del LED.
 </pre>
  
 
@@ -286,7 +318,7 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
 
 </pre>
 
-<pre>
+<!-- <pre>
 <b>Definizione dei QActor e dei contesti:</b>
 
 Attraverso un mock del sistema è già possibile definire gli attori in gioco e formalizzare alcuni comportamenti.
@@ -318,7 +350,7 @@ QActor webgui_ioport context ctxcargocompany {
 
 //...
 </code>
-</pre>
+</pre> -->
 <!-- 
 <pre>
   <code>
@@ -483,11 +515,11 @@ In questa fase di progetto è già possibile sviluppare le entità non-attive id
   La stiva deve essere capace di esprimere la posizione degli Slot e dell'IOPort.
   <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Codice POJO</a></b>
 
-• <b>Mock del sistema:</b>
+<!-- • <b>Mock del sistema:</b>
 
 Come anticipato è possibile sviluppare una prima versione mock del sistema capace di mostrare le interazioni tra le entità webgui-ioport e cargoservice.
 Non si avanzano ipotesi sulla parte software/hardware legata al sonar.
-  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/mockcargobot26qak/src/mockcargobot.qak'>mockcargobot.qak</a></b>
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint0/mockcargobot26qak/src/mockcargobot.qak'>mockcargobot.qak</a></b> -->
 
 </pre>
 
@@ -505,8 +537,8 @@ Piani di test sviluppati in relazione a <b>cargoHold</b>.
 <pre>
  • Viene prodotto un jar relativo ai componenti di dominio POJO raffiguranti la stiva:
   <b>cargoHold-1.0.jar</b>
- • Viene prodotto un mock eseguibile del sistema:
-  <b>mockcargorobot.qak</b>
+ <!-- • Viene prodotto un mock eseguibile del sistema:
+  <b>mockcargorobot.qak</b> -->
 </pre>
  
 <h2>Piano di lavoro</h2> 
