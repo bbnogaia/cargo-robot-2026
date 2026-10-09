@@ -79,7 +79,7 @@ The service must also show on the <i>display</i> on the <i>IOPort</i>:
     Il componente dovrà comunicare con le seguenti entità:
         - <b>webgui-ioport</b>
         - <b>cargorobot</b>
-        - <b>sonar</b> 
+        - <b>sonar-led</b> 
 
 •  <span style="color:red;"><b>cargorobot</b></span>
     Realizza le operazioni relative al DDR. Per l'esecuzione dei movimenti, utilizza come servizio esterno il software RobotSmart26.
@@ -92,17 +92,16 @@ The service must also show on the <i>display</i> on the <i>IOPort</i>:
 <pre>
 <b>Definizione dei QActor e dei contesti:</b>
 
+Uno degli obiettivi di questo Sprint è rilasciare un prototipo eseguibile del core business del sistema. 
+A tale scopo, le componenti <b>sonar-led</b> e <b>client</b> (webgui-ioport), 
+verranno modellate tramite mock (black box), consentendo di focalizzare i test sulla sola logica di interazione tra <b>cargoservice</b> e <b>cargorobot</b>.
+
 Di seguito definiamo gli attori in gioco e formalizziamo alcuni comportamenti.
 Sulla base delle richieste del commitente, i due componenti software RobortSmart26 e cargorobot coincidono.
 Da ora in poi, nominare uno equivarrà a nominare l'altro.
 
 <code>
 System cargocompany
-
-
-Request requestToLoad : requestToLoad(NOARGS)
-Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
-
 
 Context ctxcargocompany ip [ host="localhost" port=8040] 
 Context ctxrobotsmart ip [host="127.0.0.1" port=8050 ]
@@ -117,30 +116,33 @@ QActor cargoservice context ctxcargocompany {
 
 //...
 
-QActor webgui_ioport context ctxcargocompany {
-
-//...
 </code>
 </pre>
 
 <pre>
 <b>Dettaglio di cargoservice:</b>
 
-<span style="color:red;"><b>cargoservice</b></span> coordina i movimenti del <span style="color:red;"><b>cargorobot</b></span> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
-Di seguito evidenziamo i più rilevanti:
+• <b>cargoservice</b> accetta richieste di carico tramite la seguente sintassi:
 
-  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &lt;---&gt; cargorobot (robotsmart26)</b></span>
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; client (webgui-ioport)</b></span>
+  <code>
+    Request requestToLoad : requestToLoad(NOARGS)
+    Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+  </code>
+
+• <b>cargoservice</b> coordina i movimenti del <b>cargorobot</b> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
+Si evidenziano i più rilevanti:
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; cargorobot (robotsmart26)</b></span>
  <code>
     Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
     Reply moverobotdone : moverobotdone(ARG) for moverobot 
     Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
  </code>
 
- Uno degli obiettivi di questo sprint è rilasciare un prototipo eseguibile del core business del sistema. A tale scopo, le componenti <span style="color:red;"><b>sonar</b></span> e <span style="color:red;"><b>client</b></span> (webgui-ioport) 
- verranno modellate tramite mock (black box), consentendo di focalizzare i test sulla sola logica di interazione tra cargoservice e cargorobot.
+• <b>cargoservice</b> sarà in grado di gestire e percepire lo stato corrente del sistema tramite il modulo sviluppato nello Sprint0 (cargoHold-1.0.jar).
 
-<b>cargoservice</b> sarà in grado di gestire e percepire lo stato corrente del sistema tramite il modulo sviluppato nello sprint 0 (cargoHold-1.0.jar).
-
+• Come richiesto dal committente all'avvio del sistema tutti gli slot risulteranno liberi.
 </pre>
 
 <h2>Test plans</h2> 
