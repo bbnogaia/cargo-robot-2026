@@ -38,9 +38,9 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="wait", cond=doswitch() )
+					 transition( edgeName="goto",targetState="req", cond=doswitch() )
 				}	 
-				state("wait") { //this:State
+				state("req") { //this:State
 					action { //it:State
 						CommUtils.outyellow("$name | wait for action")
 						CommUtils.outyellow("$name | request to load")
@@ -50,7 +50,7 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t01",targetState="handleAnswer",cond=whenReply("loadAnswer"))
+					 transition(edgeName="t07",targetState="handleAnswer",cond=whenReply("loadAnswer"))
 				}	 
 				state("handleAnswer") { //this:State
 					action { //it:State
@@ -68,11 +68,13 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 								 ){CommUtils.outyellow("$name | rejected")
 								}
 						}
+						delay(14000) 
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
+					 transition( edgeName="goto",targetState="req", cond=doswitch() )
 				}	 
 			}
 		}
