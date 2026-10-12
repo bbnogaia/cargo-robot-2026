@@ -1,0 +1,243 @@
+System cargocompany
+
+
+/*
+ * cargoservice m -------------------------------------------------------------------------
+ */
+
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+
+/*
+ * sensor m -------------------------------------------------------------------------
+ */
+Dispatch containerArrived : containerArrived(ARG)
+
+/*
+ * robotsmart m -------------------------------------------------------------------------
+ */
+ 
+ Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
+ Reply moverobotdone : moverobotdone(ARG) for moverobot 
+ Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
+
+Context ctxcargocompany ip [ host="localhost" port=8040 ] 
+Context ctxrobotsmart ip [ host="127.0.0.1" port=8050 ]
+
+ExternalQActor robotsmart context ctxrobotsmart
+
+/* -------------------------------------------------------------------------
+ * CARGO SERVICE:
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor cargoservice context ctxcargocompany {
+
+    import main.java.cargoHold.model.*
+    
+    [#
+        // Istanza reale della classe Hold fornita
+        var hold: IHold = Hold()
+        var assignedSlotId: String = ""
+        
+        // Coordinate per il movimento del robot
+        var targetX: Int = 0
+        var targetY: Int = 0
+        var slot5X: Int = 0
+        var slot5Y: Int = 0
+    #]
+    
+    //--- STATE: INIT --------------------
+    State s0 initial {
+        println("$name | init e caricamento modello CargoHold") color green
+        [#
+            // Impostiamo la posizione della IOPort nel sistema di coordinate (es. 4,0)
+            hold.setIOPortPosition(Position(4, 0))
+            
+            // Recuperiamo subito le coordinate fisse dello slot5 (area di marcatura) dalla Hold[cite: 1]
+            val p5 = hold.getSlotPosition("slot5")
+            slot5X = p5.getX()
+            slot5Y = p5.getY()
+        #]
+    }
+    Goto disengaged
+    
+    //--- STATE: DISENGAGED ---------------------
+    State disengaged {
+        println("$name | disengaged (in attesa di richieste)") color magenta
+    }
+    Transition t0
+        whenRequest requestToLoad -> handleLoad
+        
+    //--- STATE: LOAD ---------------------
+    State handleLoad {
+        
+        onMsg( requestToLoad : requestToLoad(NOARGS) ) {
+            println("$name | ricevuta richiesta requestToLoad") color magenta
+            
+            [#
+                var hasSpace = hold.hasFreeSlot()
+            #]
+            
+            if [# hasSpace #] {
+                [#
+                    // Prende il primo slot libero (tra slot1 e slot4 come definito in Hold)[cite: 1]
+                    val freeSlot = hold.getFirstFreeSlot()
+                    assignedSlotId = freeSlot.getId()
+                    
+                    // Segna lo slot come RESERVED
+                    freeSlot.setSlotStatus(SlotStatus.RESERVED)
+                    
+                    // Prende le coordinate dello slot assegnato[cite: 1]
+                    val slotPos = hold.getSlotPosition(assignedSlotId)
+                    targetX = slotPos.getX()
+                    targetY = slotPos.getY()
+                #]
+                
+                println("$name | load: accettato. Slot riservato: $assignedSlotId in ($targetX, $targetY)") color magenta
+                println("$name | load: engaged - inizio blinking LED") color magenta
+                
+                // Risponde al client con il nome dello slot assegnato
+                replyTo requestToLoad with loadAnswer : loadAnswer(#assignedSlotId)
+            } else {
+                println("$name | load: rejected (Hold pieno)") color magenta
+                replyTo requestToLoad with loadAnswer : loadAnswer(rejected)
+            }
+        }
+    }
+
+    // Se c'è spazio andiamo ad attendere il container, altrimenti torniamo disengaged
+    Goto waitForContainer if [# hold.getSlot(assignedSlotId)?.getSlotStatus() == SlotStatus.RESERVED #] else disengaged
+
+    // --- STATE: ATTESA CONTAINER NELL'AREA SENSORE (Timeout 30s) ---
+    State waitForContainer {
+        println("$name | In attesa che il cliente posizioni il container nell'area sensore (max 30s)...") color magenta
+    }
+    Transition tWaitContainer
+        whenTime 30000 -> handleTimeout          // Timeout scaduto (30 secondi)
+        whenMsg containerArrived -> moveToSlot5  // TODO: da modificare quando avremo il reale comportamento del sonar
+
+
+    // --- GESTIONE TIMEOUT (30s passati senza container) ---
+    State handleTimeout {
+        println("$name | TIMEOUT: Il container non è stato posizionato entro 30 secondi!") color red
+        [#
+            // Ripristina lo slot da RESERVED a FREE nel modello Hold
+            val timedOutSlot = hold.getSlot(assignedSlotId)
+            if (timedOutSlot != null) {
+                timedOutSlot.setSlotStatus(SlotStatus.FREE)
+                println("Slot $assignedSlotId liberato a seguito del timeout.")
+            }
+        #]
+        println("$name | Sistema disengaged (spegnimento LED lampeggiante).") color magenta
+    }
+    Goto disengaged
+
+    // --- STEP 1: Muove il robot dallo IOPort allo slot5 per la marcatura ---
+    State moveToSlot5 {
+        println("$name | Comando cargorobot verso slot5 (marcatura) in coordinate ($slot5X, $slot5Y)") color magenta
+        request cargorobot -m moverobot : moverobot(#slot5X, #slot5Y, 330)
+        // TODO: va bene uno steptime di 330???
+    }
+    Transition tRobotMark
+        whenReply moverobotdone -> markContainer
+        whenReply moverobotfailed -> handleRobotFailure
+
+    // --- STEP 2: Attesa marcatura (simulata con delay o segnale marker) ---
+    State markContainer {
+        println("$name | Container allo slot5. Attesa marcatura barcode...") color magenta
+        delay 3000 // Simulazione tempo di marcatura
+    }
+    Goto moveToFinalSlot
+
+    // --- STEP 3: Muove il robot dallo slot5 allo slot finale riservato ---
+    State moveToFinalSlot {
+        println("$name | Marcatura completata. Comando cargorobot verso lo slot finale: $assignedSlotId ($targetX, $targetY)") color magenta
+        request cargorobot -m moverobot : moverobot(#targetX, #targetY, 330)
+    }
+    Transition tRobotFinal
+        whenReply moverobotdone -> finalizeStorage
+        whenReply moverobotfailed -> handleRobotFailure
+
+    // --- STEP 4: Finalizzazione nello storage ---
+    State finalizeStorage {
+        [#
+            // Aggiorna lo stato dello slot a OCCUPIED nel modello Java reale[cite: 1]
+            val finalSlot = hold.getSlot(assignedSlotId)
+            finalSlot.setSlotStatus(SlotStatus.OCCUPIED)
+        #]
+        println("$name | Container posizionato con successo nello slot $assignedSlotId. Slot ora OCCUPIED.") color green
+    }
+    Goto disengaged
+
+    // --- GESTIONE ERRORI ROBOT ---
+    State handleRobotFailure {
+        println("$name | Errore critico: movimento del cargorobot fallito!") color red
+    }
+    Goto disengaged
+}
+
+/* -------------------------------------------------------------------------
+ * MOCK SONAR:
+ * -------------------------------------------------------------------------
+ */
+QActor sonar context ctxcargocompany {
+    State s0 initial {
+        println("$name | init sonar mock") color cyan
+    }
+    Goto simulateDetection
+    
+    State simulateDetection {
+        // Attende qualche secondo prima di simulare il posizionamento
+        delay 6000
+        println("$name | [SONAR] Rilevato container nell'area sensore! Invio containerArrived...") color cyan
+        forward cargoservice -m containerArrived : containerArrived(ok)
+        
+        // Se vuoi simulare altre letture o metterlo inattivo puoi gestire un ciclo o metterlo in attesa
+        delay 15000
+    }
+    Goto simulateDetection
+}
+
+/* -------------------------------------------------------------------------
+ * WEB-GUI MOCK:
+ * -------------------------------------------------------------------------
+ */
+
+QActor webgui_ioport context ctxcargocompany {
+    
+    //--- STATE: INIT --------------------
+    State s0 initial {
+        println("$name | init webgui_ioport") color yellow 
+    }
+    Goto wait
+    
+    //--- STATE: WAIT ---------------------
+    State wait {
+        println("$name | pronto per nuova richiesta di carico") color yellow
+        delay 2000
+        println("$name | invio requestToLoad...") color yellow
+        request cargoservice -m requestToLoad : requestToLoad(NOARGS)
+    }
+    Transition t0
+        whenReply loadAnswer -> handleAnswer
+    
+    //--- STATE: ANSWER ---------------------
+    State handleAnswer {
+        onMsg( loadAnswer : loadAnswer(ANSWER) ) {
+            [# var ans = payloadArg(0) #]
+            
+            if [# ans.startsWith("slot") #] {
+                println("$name | Esito positivo: Riservato $ans") color yellow   
+            }
+            if [# ans == "retrylater" #] {
+                println("$name | Esito: retrylater (IOPort occupata o Out of Service)") color yellow 
+            }
+            if [# ans == "rejected" #] {
+                println("$name | Esito: rejected (Hold pieno)") color yellow  
+            }
+        }   
+    }
+    // Ritorna a wait per ri-eseguire il ciclo di test
+    Goto wait 
+}
