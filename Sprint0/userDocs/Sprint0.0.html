@@ -185,15 +185,28 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
   </tbody>
 </table>
 
+  Viene formalizzata anche la posizione dell'IOPort:
+ <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Componente</th>
+      <th style="padding: 8px;">Posizione / Coordinate Robotiche (X, Y)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">IOPort</td>
+      <td style="padding: 8px;">(4, 0)</td>
+    </tr>
+</table>
+
+
   Possiamo già stabilire che la <b><i>hold</i></b> non avrà alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
 
 <code>
 public interface IHold {
 
   //--IO-PORT:
-    // setta la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    void setIOPortPosition(Position p);
-
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
     Position getIOPortPosition();
 
@@ -363,12 +376,6 @@ A seguito di questa scelta, individuiamo i seguenti <span style="color:rgb(8, 17
   @Before
     public void setUp() {
         hold = new Hold();
-  }
-
-  @Test
-    public void testIOPortPositionSetAndGet() {
-        hold.setIOPortPosition(new Position(0, 0));
-        assertEquals(new Position(0, 0), hold.getIOPortPosition());
   }
 
   @Test

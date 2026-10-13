@@ -24,12 +24,6 @@ public class HoldTest {
     }
 
     @Test
-    public void testIOPortPositionSetAndGet() {
-        hold.setIOPortPosition(new Position(0, 0));
-        assertEquals(new Position(0, 0), hold.getIOPortPosition());
-    }
-
-    @Test
     public void testGetSlot() {
         // slot inizializzati da 1 a 5
         ISlot s = hold.getSlot("slot1");

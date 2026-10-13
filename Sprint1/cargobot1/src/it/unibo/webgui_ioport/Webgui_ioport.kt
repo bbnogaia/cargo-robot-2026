@@ -38,9 +38,9 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="req", cond=doswitch() )
+					 transition( edgeName="goto",targetState="mockReq", cond=doswitch() )
 				}	 
-				state("req") { //this:State
+				state("mockReq") { //this:State
 					action { //it:State
 						CommUtils.outyellow("$name | wait for action")
 						CommUtils.outyellow("$name | request to load")
@@ -50,7 +50,7 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t07",targetState="handleAnswer",cond=whenReply("loadAnswer"))
+					 transition(edgeName="t09",targetState="handleAnswer",cond=whenReply("loadAnswer"))
 				}	 
 				state("handleAnswer") { //this:State
 					action { //it:State
@@ -74,7 +74,7 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="req", cond=doswitch() )
+					 transition( edgeName="goto",targetState="mockReq", cond=doswitch() )
 				}	 
 			}
 		}

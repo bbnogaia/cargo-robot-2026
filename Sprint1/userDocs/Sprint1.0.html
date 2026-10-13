@@ -143,6 +143,90 @@ Si evidenziano i più rilevanti:
 • <b>cargoservice</b> sarà in grado di gestire e percepire lo stato corrente del sistema tramite il modulo sviluppato nello Sprint0 (cargoHold-1.0.jar).
 
 • Come richiesto dal committente all'avvio del sistema tutti gli slot risulteranno liberi.
+
+• Notiamo che <b>cargoservice</b>, essendo configurato come un QActor (Qak), presenta una propria <span style="color:rgb(153, 0, 255);"><b>coda locale</b></span> in cui sono
+  depositati i messaggi a lui inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
+</pre>
+
+<pre>
+<b>Assegnazione slot e carimento del container in stiva:</b>
+
+• Una volta ricevuta la richiesta di carico, se ogni condizione presentata nei requisiti è soddisfatta,
+  <b>cargorobot</b> si reca presso l'IOPort e in un tempo stimato di 2 secondi recupera il container.
+
+<code>
+     State moveToIOPort {
+        println("$name | Container rilevato! Comando cargorobot verso IOPort in coordinate ($IOPortX, $IOPortY)") color magenta
+        request robotsmart -m moverobot : moverobot($IOPortX, $IOPortY, 330)
+    }
+    Transition t2
+        whenReply moverobotdone -> moveToSlot5
+        whenReply moverobotfailed -> handleRobotFailure
+
+    State moveToSlot5 {
+    	delay 2000
+        println("$name | IOPort raggiunta. Comando cargorobot verso slot5 (marcatura) in coordinate ($Slot5X, $Slot5Y)") color magenta
+        request robotsmart -m moverobot : moverobot($Slot5X, $Slot5Y, 330)
+    }
+    Transition t3
+        whenReply moverobotdone -> markContainer
+        whenReply moverobotfailed -> handleRobotFailure
+</code>
+
+• <b>cargorobot</b> raggiunge lo slot5 dove avverrà la marcatura del container in un tempo stimato di 3 secondi.
+
+<code>
+     State markContainer {
+        println("$name | container allo slot5. Attesa marcatura barcode...") color magenta
+        delay 3000 
+    }
+    Goto moveToFinalSlot
+</code>
+
+• Infine, raggiunge lo slot assegnato e rilascia il container.
+</pre>
+
+<pre>
+<b>Anomalie gestite:</b>
+
+• <b>cargoservice</b> è capace di gestire anomalie date da errori di movimento del <b>cargorobot</b>.
+<code>
+    State handleRobotFailure {
+        println("$name | errore: movimento del cargorobot fallito!") color red
+    }
+    Goto disengaged
+</code>
+• <b>cargoservice</b> è capace di gestire anomalie legate alla stiva piena restituendo come risposta 'rejected'
+   alla richiesta di caricamento. 
+<code>
+        [#
+            var hasSpace = hold.hasFreeSlot()
+        #]
+            
+        if [# hasSpace #] {
+    
+        } else {
+            println("$name | load: rejected") color magenta
+            replyTo requestToLoad with loadAnswer : loadAnswer(rejected)
+        }
+</code>
+
+• <b>cargoservice</b> è capace di gestire anomalie legate al mancato posizionamento del container presso IOPort.
+<code>
+    State handleTimeout {
+        println("$name | TIMEOUT: Il container non è stato posizionato entro 30 secondi!") color red
+        [#
+            // Ripristina lo slot da RESERVED a FREE
+            val timedOutSlot = hold.getSlot(AssignedSlotId)
+            if (timedOutSlot != null) {
+                timedOutSlot.setSlotStatus(SlotStatus.FREE)
+                println("Slot $AssignedSlotId liberato a seguito del timeout.")
+            }
+        #]
+        println("$name | sistema disengaged.") color magenta
+    }
+    Goto disengaged
+</code>
 </pre>
 
 <h2>Test plans</h2> 
@@ -152,15 +236,14 @@ Si evidenziano i più rilevanti:
 
 <h2>Project</h2> 
 <pre>
+In questa fase di progetto viene sviluppato un primo software eseguibile:
+
+• <span style="color:rgb(6, 181, 41);"><b><i>Core business</i></b></span> 
+  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Codice Qak</a></b>
 
 </pre>
 
 <h2>Testing</h2> 
-<pre>
-
-</pre>
-
-<h2>Deployment</h2> 
 <pre>
 
 </pre>

@@ -3,9 +3,6 @@ package main.java.cargoHold.model;
 public interface IHold {
 	
 	// -- IO-PORT:
-    // setta la posizione dell'IOPort in coordinate RobotSmart (X,Y)
-    void setIOPortPosition(Position p);
-    
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
     Position getIOPortPosition();
 

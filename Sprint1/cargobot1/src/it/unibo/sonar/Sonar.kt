@@ -38,12 +38,12 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="simulateDetection", cond=doswitch() )
+					 transition( edgeName="goto",targetState="mockDetection", cond=doswitch() )
 				}	 
-				state("simulateDetection") { //this:State
+				state("mockDetection") { //this:State
 					action { //it:State
 						delay(6000) 
-						CommUtils.outcyan("$name | [SONAR] Rilevato container nell'area sensore! Invio containerArrived...")
+						CommUtils.outcyan("$name | rilevato container nell'area sensore! Invio containerArrived...")
 						forward("containerArrived", "containerArrived(ok)" ,"cargoservice" ) 
 						delay(15000) 
 						//genTimer( actor, state )
@@ -51,7 +51,7 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="simulateDetection", cond=doswitch() )
+					 transition( edgeName="goto",targetState="mockDetection", cond=doswitch() )
 				}	 
 			}
 		}

@@ -1,0 +1,37 @@
+System testcg
+
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+
+Context ctxcompany ip [ host="localhost" port=8010] 
+
+QActor cargoservice context ctxcompany {
+
+  
+    //--- STATE: INIT --------------------
+    State s0 initial {
+        println("$name | init e caricamento modello CargoHold") color green
+    }
+    Goto disengaged
+    
+    //--- STATE: DISENGAGED ---------------------
+    State disengaged {
+        println("$name | disengaged (in attesa di richieste)") color magenta
+    }
+    Transition t0
+        whenRequest requestToLoad -> handleLoad
+        
+    //--- STATE: LOAD ---------------------
+    State handleLoad {
+        
+        onMsg( requestToLoad : requestToLoad(NOARGS) ) {
+            println("$name | ricevuta richiesta requestToLoad") color magenta
+            
+                replyTo requestToLoad with loadAnswer : loadAnswer(slot1) 
+          
+        }
+    }
+    Goto disengaged 
+}
+
+

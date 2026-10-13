@@ -20,20 +20,16 @@ public class Hold implements IHold {
             slots.put(slotId, new Slot(slotId)); // stato iniziale: FREE
         }
 
-        // inizializzazione delle posizioni degli slot da requisiti (coordinate RobotSmart)
+        // inizializzazione delle posizioni degli slot/componenti da requisiti (coordinate RobotSmart)
         slotPositions.put("slot1", new Position(1, 1));
         slotPositions.put("slot2", new Position(1, 4));
         slotPositions.put("slot3", new Position(3, 1));
         slotPositions.put("slot4", new Position(3, 4));
         slotPositions.put("slot5", new Position(2, 5));
+        this.ioPortPosition = new Position(4, 0);
     }
 
     // IO-PORT ====================
-
-    @Override
-    public void setIOPortPosition(Position p) {
-        this.ioPortPosition = p;
-    }
 
     @Override
     public Position getIOPortPosition() {
