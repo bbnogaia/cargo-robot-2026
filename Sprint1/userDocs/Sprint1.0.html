@@ -231,7 +231,51 @@ Si evidenziano i più rilevanti:
 
 <h2>Test plans</h2> 
 <pre>
-  
+• Vengono definiti test che permettono di esplicitare il comportamento attesso in relazione ai messaggi:
+
+<code>
+    @Test
+    public void testRequestToLoadAccepted() throws Exception {
+        String req = CommUtils.buildRequest(
+                "mock",
+                "requestToLoad",
+                "requestToLoad(NOARGS)",
+                "cargoservice"
+        ).toString();
+
+        System.out.println("Richiesta: " + req);
+
+        String response = conn.request(req);
+
+        System.out.println("Risposta: " + response);
+
+        assertTrue("La risposta deve contenere slot",
+                response.contains("slot"));
+        assertFalse("La richiesta non dovrebbe essere rifiutata",
+                response.contains("rejected"));
+    }
+
+    @Test
+    public void testRequestToLoadRejected() throws Exception {
+        String req = CommUtils.buildRequest(
+                "mock",
+                "requestToLoad",
+                "requestToLoad(NOARGS)",
+                "cargoservice"
+        ).toString();
+
+        System.out.println("Richiesta: " + req);
+
+        String response = conn.request(req);
+
+        System.out.println("Risposta: " + response);
+
+        assertTrue("La risposta deve essere rifiutata",
+                response.contains("rejected"));
+        assertFalse("La richiesta non dovrebbe specificare uno slot",
+                response.contains("slot"));
+    }
+</code>  
 </pre>
 
 <h2>Project</h2> 
@@ -245,6 +289,9 @@ In questa fase di progetto viene sviluppato un primo software eseguibile:
 
 <h2>Testing</h2> 
 <pre>
+Piani di test sviluppati:
+
+• Testing per cargoservice: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/it/unibo/test/CargoServiceTest.java'>Codice Test</a></b>
 
 </pre>
 

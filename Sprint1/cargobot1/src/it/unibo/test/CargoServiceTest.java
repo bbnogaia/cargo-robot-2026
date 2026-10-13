@@ -34,9 +34,30 @@ public class CargoServiceTest {
 
         System.out.println("Risposta: " + response);
 
-        assertTrue("La risposta deve essere loadAnswer",
+        assertTrue("La risposta deve specificare uno slot",
                 response.contains("slot"));
         assertFalse("La richiesta non dovrebbe essere rifiutata",
                 response.contains("rejected"));
+    }
+    
+    @Test
+    public void testRequestToLoadRejected() throws Exception {
+        String req = CommUtils.buildRequest(
+                "mock",
+                "requestToLoad",
+                "requestToLoad(NOARGS)",
+                "cargoservice"
+        ).toString();
+
+        System.out.println("Richiesta: " + req);
+
+        String response = conn.request(req);
+
+        System.out.println("Risposta: " + response);
+
+        assertTrue("La risposta deve essere rifiutata",
+                response.contains("rejected"));
+        assertFalse("La richiesta non dovrebbe specificare uno slot",
+                response.contains("slot"));
     }
 }
