@@ -104,4 +104,14 @@ public class HoldTest {
         assertNull(hold.getFirstFreeSlot());
     }
 
+    @Test
+    public void testGetHomePosition() {
+        assertEquals(new Position(0, 0), hold.getHomePosition());
+    }
+
+    @Test
+    public void testGetIOPortPosition() {
+        assertEquals(new Position(4, 0), hold.getIOPortPosition());
+    }
+
 }

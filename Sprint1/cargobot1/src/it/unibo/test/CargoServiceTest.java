@@ -34,10 +34,10 @@ public class CargoServiceTest {
 
         System.out.println("Risposta: " + response);
 
-        assertTrue("La risposta deve specificare uno slot",
-                response.contains("slot"));
+        assertTrue("La risposta deve essere loadAccepted con uno slot assegnato",
+                response.contains("loadAccepted"));
         assertFalse("La richiesta non dovrebbe essere rifiutata",
-                response.contains("rejected"));
+                response.contains("loadRejected"));
     }
     
     @Test
@@ -55,9 +55,9 @@ public class CargoServiceTest {
 
         System.out.println("Risposta: " + response);
 
-        assertTrue("La risposta deve essere rifiutata",
-                response.contains("rejected"));
-        assertFalse("La richiesta non dovrebbe specificare uno slot",
-                response.contains("slot"));
+        assertTrue("La risposta deve essere loadRejected",
+                response.contains("loadRejected"));
+        assertFalse("La richiesta non dovrebbe essere accettata",
+                response.contains("loadAccepted"));
     }
 }

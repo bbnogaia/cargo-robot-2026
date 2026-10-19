@@ -149,13 +149,13 @@ QActor cargoservice context ctxcargocompany
     Reply setSlotChanged : setSlotChanged(NOARGS) for setSlot
     Reply setSlotFailed : setSlotFailed(REASON) for setSlot
 
-    Request requestPosition : requestPosition(SLOTID)
+    Request requestPosition : requestPosition(POSITION)
     Reply slotPosition : slotPosition(X, Y) for requestPosition
     Reply positionFailed : positionFailed(REASON) for requestPosition
   </code>
   Richieste attese:
   - <b>setSlot</b>: slotId, stato "free", "reserved" o "occupied"
-  - <b>requestPosition</b>: slotId
+  - <b>requestPosition</b>: posizione di slotId, io-port oppure HOME
 
   Risposte attese:
   - <b>slotReserved</b>: slotId riservato

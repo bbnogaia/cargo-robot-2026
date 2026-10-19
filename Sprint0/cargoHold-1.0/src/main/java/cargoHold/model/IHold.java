@@ -2,7 +2,11 @@ package main.java.cargoHold.model;
 
 public interface IHold {
 	
-	// -- IO-PORT:
+	// -- HOME:
+    // restituisce la posizione della HOME in coordinate RobotSmart (X,Y)
+    Position getHomePosition();
+    
+    // -- IO-PORT:
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
     Position getIOPortPosition();
 

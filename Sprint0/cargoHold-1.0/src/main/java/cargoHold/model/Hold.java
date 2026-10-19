@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Hold implements IHold {
 
-    private Position ioPortPosition;
+    private Position homePosition, ioPortPosition;
 
     // Map ID_Slot -> Istanza ISlot
     private final Map<String, ISlot> slots = new HashMap<>();
@@ -26,7 +26,15 @@ public class Hold implements IHold {
         slotPositions.put("slot3", new Position(3, 1));
         slotPositions.put("slot4", new Position(3, 4));
         slotPositions.put("slot5", new Position(2, 5));
+        this.homePosition = new Position(0,0);
         this.ioPortPosition = new Position(4, 0);
+    }
+
+    // HOME ====================
+
+    @Override
+    public Position getHomePosition() {
+        return this.homePosition;
     }
 
     // IO-PORT ====================
