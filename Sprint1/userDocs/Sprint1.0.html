@@ -23,8 +23,7 @@
 <h2>Introduction</h2>
 <pre>
 <b>GOAL</b>: 
-- Progettare ed implementare la logica principale del sistema
-- Sviluppare i componenti cargoservice e cargorobot e le loro logiche
+- Analizzare e sviluppare i componenti cargoservice e cargorobot e le loro logiche
 </pre>
 
 <h2>Requirements</h2>
@@ -71,34 +70,48 @@ The service must also show on the <i>display</i> on the <i>IOPort</i>:
 <h2>Requirement Analysis</h2>
 
 <pre>
-   
- Nello Sprint0 sono stati indivituati e sviluppati i componenti software POJO del sistema essenziali per i servizi cargoservice e cargorobot.
+A partire da quanto svolto nello Sprint0, ci concentriamo sui seguenti requisiti: 
 
- •  <span style="color:red;"><b>cargoservice</b></span>
-    Si occupa della logica di business relativa alle richieste di movimentazione e allocazione dei container.
-    Il componente dovrà comunicare con le seguenti entità:
-        - <b>webgui-ioport</b>
-        - <b>cargorobot</b>
-        - <b>sonar-led</b> 
+• Studio dei componenti non-attivi del sistema e loro integrazione.
 
-•  <span style="color:red;"><b>cargorobot</b></span>
-    Realizza le operazioni relative al DDR. Per l'esecuzione dei movimenti, utilizza come servizio esterno il software RobotSmart26.
-    Il componente dovrà comunicare con le seguenti entità:
-        - <b>cargoservice</b>
+• Studio del macro-componente <span style="color:red;"><b>cargoservice</b></span> e della logica di business relativa 
+  alle richieste di movimentazione e allocazione dei container.
+
+• Studio del macro-componente <span style="color:red;"><b>cargorobot</b></span>; il quale realizza le operazioni relative al DDR.
 
 </pre>
  
 <h2>Problem Analysis</h2>
 <pre>
+<b>Componenti non-attivi e introduzione di cargohold:</b>
+
+• Per rappresentare in modo strutturato lo stato della hold e dei suoi componenti, si introducono apposite classi POJO, 
+  che consentono di modellare le informazioni relative alla configurazione spaziale della stiva e allo stato degli slot.
+
+• Una volta definita la rappresentazione della hold e dei relativi componenti, è necessario individuare quale entità del sistema debba essere 
+  responsabile della gestione e della persistenza del suo stato durante l'esecuzione. Tale responsabilità non dovrebbe essere affidata a cargoservice, 
+  poiché un suo eventuale riavvio a runtime comporterebbe la nuova istanziazione degli oggetti utilizzati per rappresentare lo stato della stiva, 
+  con il rischio di perdere le informazioni accumulate durante l'esecuzione. Per evitare questa dipendenza e garantire una maggiore separazione delle responsabilità, 
+  si sceglie di introdurre un <b>nuovo microservizio proattivo</b>, dedicato alla gestione e al mantenimento dello stato della hold e dei suoi componenti: <span style="color:red;"><b>cargohold</b></span>. 
+  Questa entità avrà il compito di monitorare e aggiornare lo stato del sistema, rendendolo disponibile agli altri servizi attraverso opportune interfacce di comunicazione. 
+  In questo modo, cargoservice potrà concentrarsi sulle proprie responsabilità applicative, delegando la gestione dello stato a un componente dedicato.
+</pre>
+
+<pre>
+<b>Relazione cargorobot &leftrightarrow; robotsmart26:</b>
+
+• Sulla base dei requisiti e delle indicazioni fornite dal committente, si stabilisce che i due componenti software robotsmart26 e cargorobot siano da considerarsi equivalenti 
+  e facciano riferimento alla medesima entità all'interno dell'architettura del sistema. 
+  Tale scelta consente di uniformare la terminologia utilizzata nella documentazione, evitando ambiguità nell'identificazione del componente e nella descrizione delle sue responsabilità. 
+  Di conseguenza, da questo punto in avanti, <b>i termini robotsmart26 e cargorobot saranno utilizzati in modo intercambiabile</b>, senza che ciò implichi l'esistenza di due componenti software distinti.
+
+• Si osserva che robotsmart26 non gestisce lo stato degli slot, ma come già anticipato, sarà compito cargohold.
+</pre>
+
+<pre>
 <b>Definizione dei QActor e dei contesti:</b>
 
-Uno degli obiettivi di questo Sprint è rilasciare un prototipo eseguibile del core business del sistema. 
-A tale scopo, le componenti <b>sonar-led</b> e <b>client</b> (webgui-ioport), 
-verranno modellate tramite mock (black box), consentendo di focalizzare i test sulla sola logica di interazione tra <b>cargoservice</b> e <b>cargorobot</b>.
-
-Di seguito definiamo gli attori in gioco e formalizziamo alcuni comportamenti.
-Sulla base delle richieste del commitente, i due componenti software RobortSmart26 e cargorobot coincidono.
-Da ora in poi, nominare uno equivarrà a nominare l'altro.
+Di seguito definiamo gli attori in gioco modellando un primo sistema:
 
 <code>
 System cargocompany
@@ -112,25 +125,53 @@ ExternalQActor robotsmart context ctxrobotsmart
 
 //...
 
-QActor cargoservice context ctxcargocompany {
+QActor cargohold context ctxcargocompany
 
 //...
+
+QActor cargoservice context ctxcargocompany 
 
 </code>
 </pre>
 
 <pre>
-<b>Dettaglio di cargoservice:</b>
+<b>Dettaglio messaggi:</b>
 
-• <b>cargoservice</b> accetta richieste di carico tramite la seguente sintassi:
+• <span style="color:red;"><b>cargohold</b></span> comunica tramite la seguente sintassi:
 
-  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; client (webgui-ioport)</b></span>
+•  <span style="color:rgb(0, 85, 255);"><b>cargohold &leftrightarrow; cargoservice</b></span>
+  <code>
+    Request requestSlot : requestSlot(NOARGS)
+    Reply slotReserved: slotReserved(ANSWER) for requestSlot
+    Reply slotFailed: slotFailed(REASON) for requestSlot
+
+    Request setSlot : setSlot(SLOTID, STATE)
+    Reply setSlotChanged : setSlotChanged(NOARGS) for setSlot
+    Reply setSlotFailed : setSlotFailed(REASON) for setSlot
+  </code>
+  Richieste attese:
+  - <b>setSlot</b>: slotId, stato "free", "reserved" o "occupied"
+
+  Risposte attese:
+  - <b>slotReserved</b>: slotId riservato
+  - <b>slotFailed</b>: motivazione
+  - <b>setSlotFailed</b>: motivazione
+
+• <span style="color:red;"><b>cargoservice</b></span> accetta richieste di carico tramite la seguente sintassi:
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; webgui</b></span>
   <code>
     Request requestToLoad : requestToLoad(NOARGS)
-    Reply loadAnswer: loadAnswer(ANSWER) for requestToLoad
+    Reply loadAccepted: loadAccepted(ANSWER) for requestToLoad
+    Reply loadRejected: loadRejected(ANSWER) for requestToLoad
+    Reply loadRetryLater: loadRetryLater(ANSWER) for requestToLoad
   </code>
+  Risposte attese:
+  - <b>loadAccepted</b>: slotId riservato
+  - <b>loadRejected</b>: "rejected"
+  - <b>loadRetryLater</b>: "retrylater"
 
-• <b>cargoservice</b> coordina i movimenti del <b>cargorobot</b> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
+• <span style="color:red;"><b>cargoservice</b></span> coordina i movimenti del <span style="color:red;"><b>cargorobot</b></span> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
 Si evidenziano i più rilevanti:
 
   •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; cargorobot (robotsmart26)</b></span>
@@ -140,94 +181,11 @@ Si evidenziano i più rilevanti:
     Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
  </code>
 
-• <b>cargoservice</b> sarà in grado di gestire e percepire lo stato corrente del sistema tramite il modulo sviluppato nello Sprint0 (cargoHold-1.0.jar).
 
-• Come richiesto dal committente all'avvio del sistema tutti gli slot risulteranno liberi.
-
-• Notiamo che <b>cargoservice</b>, essendo configurato come un QActor (Qak), presenta una propria <span style="color:rgb(153, 0, 255);"><b>coda locale</b></span> in cui sono
-  depositati i messaggi a lui inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
+• Notiamo gli attori, essendo configurati come un QActor (Qak), presentano una propria <span style="color:rgb(153, 0, 255);"><b>coda locale</b></span> in cui sono
+  depositati i messaggi a loro inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
 </pre>
 
-<pre>
-<b>Assegnazione slot e carimento del container in stiva:</b>
-
-• Una volta ricevuta la richiesta di carico, se ogni condizione presentata nei requisiti è soddisfatta,
-  <b>cargorobot</b> si reca presso l'IOPort e in un tempo stimato di 2 secondi recupera il container.
-
-<code>
-     State moveToIOPort {
-        println("$name | Container rilevato! Comando cargorobot verso IOPort in coordinate ($IOPortX, $IOPortY)") color magenta
-        request robotsmart -m moverobot : moverobot($IOPortX, $IOPortY, 330)
-    }
-    Transition t2
-        whenReply moverobotdone -> moveToSlot5
-        whenReply moverobotfailed -> handleRobotFailure
-
-    State moveToSlot5 {
-    	delay 2000
-        println("$name | IOPort raggiunta. Comando cargorobot verso slot5 (marcatura) in coordinate ($Slot5X, $Slot5Y)") color magenta
-        request robotsmart -m moverobot : moverobot($Slot5X, $Slot5Y, 330)
-    }
-    Transition t3
-        whenReply moverobotdone -> markContainer
-        whenReply moverobotfailed -> handleRobotFailure
-</code>
-
-• <b>cargorobot</b> raggiunge lo slot5 dove avverrà la marcatura del container in un tempo stimato di 3 secondi.
-
-<code>
-     State markContainer {
-        println("$name | container allo slot5. Attesa marcatura barcode...") color magenta
-        delay 3000 
-    }
-    Goto moveToFinalSlot
-</code>
-
-• Infine, raggiunge lo slot assegnato e rilascia il container.
-</pre>
-
-<pre>
-<b>Anomalie gestite:</b>
-
-• <b>cargoservice</b> è capace di gestire anomalie date da errori di movimento del <b>cargorobot</b>.
-<code>
-    State handleRobotFailure {
-        println("$name | errore: movimento del cargorobot fallito!") color red
-    }
-    Goto disengaged
-</code>
-• <b>cargoservice</b> è capace di gestire anomalie legate alla stiva piena restituendo come risposta 'rejected'
-   alla richiesta di caricamento. 
-<code>
-        [#
-            var hasSpace = hold.hasFreeSlot()
-        #]
-            
-        if [# hasSpace #] {
-    
-        } else {
-            println("$name | load: rejected") color magenta
-            replyTo requestToLoad with loadAnswer : loadAnswer(rejected)
-        }
-</code>
-
-• <b>cargoservice</b> è capace di gestire anomalie legate al mancato posizionamento del container presso IOPort.
-<code>
-    State handleTimeout {
-        println("$name | TIMEOUT: Il container non è stato posizionato entro 30 secondi!") color red
-        [#
-            // Ripristina lo slot da RESERVED a FREE
-            val timedOutSlot = hold.getSlot(AssignedSlotId)
-            if (timedOutSlot != null) {
-                timedOutSlot.setSlotStatus(SlotStatus.FREE)
-                println("Slot $AssignedSlotId liberato a seguito del timeout.")
-            }
-        #]
-        println("$name | sistema disengaged.") color magenta
-    }
-    Goto disengaged
-</code>
-</pre>
 
 <h2>Test plans</h2> 
 <pre>

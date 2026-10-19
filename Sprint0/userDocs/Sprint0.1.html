@@ -1,0 +1,501 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="css/mystyle.css">
+<script type="text/javascript" src="js/highlight-java-code.js" defer></script>
+<!--
+    <script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+    
+</head>
+   
+<title>CargoBot26</title></head>
+    
+
+<body>
+<div id="top">
+<h1>CargoBot26: SPRINT0</h1>
+</div>  
+
+<div class="body">  
+
+<h2>Introduction</h2>
+<pre>
+<b>GOAL</b>: 
+- Chiarire i requisiti del committente e formalizzarli. 
+- Si stabilisce il piano di lavoro con scadenze e Sprint successivi.
+</pre>
+
+<h2>Requirements</h2>
+<!-- <div class="remark"> -->
+<pre>
+A <i>Maritime Cargo</i> shipping company (from now on, simply <b>company</b>) intends to automate the operations of load of <b>containers</b> in the ship's
+cargo hold (or simply <b>hold</b>). To this end, the company plans to employ a <i>Differential Drive Robot</i> (from now, called <b>cargorobot</b>).
+
+The <i>hold</i> is a rectangular, flat area with an Input/Output port (<b>IOPort</b>). The area provides 4 <b>slots</b> to store the containers and
+a slot named <b>slot5</b>.
+
+<img src="./img/req.jpg" alt="emiglio" width="50%" height="50%">
+
+In the picture above:
+
+• The <b>slots1-4</b> depict the hold areas reserved to store one <i>container</i> each,
+
+• The <b>slot5</b> depicts an area, where the <i>cargorobot</i> must temporarily store a container, before to place it in one of the
+  <i>slots1-4</i>. During temporary storage, a 'marker' device labels the container with an identification barcode and signals when this marking
+  activity is completed.
+
+• The <b>IOPort</b> is a device with a <b>pushbutton</b> and a <b>display</b>.
+  The <i>pushbutton</i> is pressed by the customer in order to send a request to load a container on the cargo. The <i>display</i> is used to show the
+  answer to the request and to show the current state of the <i>hold</i>.
+
+• The <b>sensor</b> associated to the <i>IOPort</i> is a device (a <i>sonar</i>) used to detect the presence of a container, when it measures a
+  distance D, such that D &lt; DFREE/2, during a reasonable time (e.g. 3 secs).
+
+
+
+The company asks us to build service named <b>cargoservice</b> that should work as follows.
+
+The <i>cargoservice</i> is able to receive a <b>request to load</b> a container sent by some customer by using the <i>pushbutton</i> of the <i>IOPort</i>.
+
+• It sends the answer retrylater, if the <b>IOPort</b> is currently occupied by a container or if the system is <i>Out of service</i>
+
+• It rejects the request when the hold is already full, i.e. the <b>slots1-4</b> are already occupied.
+
+• Otherwise, it considers the system as <b>engaged</b>, detects a free slot and returns as answer the name of such a reserved slot.
+  While engaged, the system must blink a Led.
+
+When the <i>request to load</i> is accepted, the customer must move the container in the <i>sensor</i> area within prefixed amount of time (e.g. 30
+secs), otherwise the systems becomes <b>disengaged</b>. Then, the <i>cargoservice</i> uses the <i>cargorobot</i> to move the container from the
+<i>IOPort</i> to the <b>slot5</b> (for marking the container) and then to the reserved slot.
+
+
+
+The service must also show on the <i>display</i> on the <i>IOPort</i>:
+
+• the current state of the <i>hold</i>
+
+• the message <b>'Service working'</b>, when it is all is going well
+
+• the message <b>'Out of service'</b> if the <i>sonar sensor</i> measures a distance D &gt; DFREE for at least 3 secs 
+  (perhaps a failure of the <i>sonar</i>).
+</pre>
+  
+
+<h2>Requirement Analysis</h2>
+
+<pre>
+Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> intende automatizzare le operazioni di carico dei container tramite l’utilizzo di un DDR.
+
+• <span style="color:rgb(255, 106, 0);"><b><i>cargorobot</i></b></span> rappresenta l’entità robotica che applica al DDR i servizi richiesti dai requisiti del committente.
+
+  Il <b><i>DDR</i></b> è fornito dal committente tramite software 'VirtualRobot26' che simula un <i>Differential Drive Robot</i> in un ambiente virtuale denominato WEnv. 
+  Questo modello è progettato per essere facilmente adattabile ad un robot reale.
+  <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa al Robot Virtuale</a></b>
+
+  Il committente rende dispoibili ulteriori componenti software dedicati al DDR.
+  In particolare, 'RobortSmart26' riesce ad adattarsi al contesto del problema in quanto sviluppato come un servizio capace di comunicare con altre entità.
+  Si adegua alle richieste del committente poichè capace di rappresentare la stiva tramite una mappa mentale e di pianificare 
+  come raggiungere una posizione obbiettivo tramite opportuni algoritmi.
+
+  Dalla documentazione emerge che il software RobotSmart26 dispone già di una propria rappresentazione interna di mappa, che nel caso in esame 
+  corrisponde alla stiva della compagnia marittima studiata. Non è pertanto necessario effettuare ulteriori operazioni di ridimensionamento, 
+  ferma restando la possibilità di modificarne la geometria qualora se ne presenti la necessità.
+  Le coordinate della mappa e quelle utilizzate per il movimento del robot sono espresse in unità robotiche su un piano bidimensionale (X, Y). 
+  Nel seguito, si farà riferimento a tale sistema di coordinate e al relativo dimensionamento.
+
+  Nel complesso <b><i>cargorobot</i></b> è un’entità proattiva capace di ricevere/inviare messaggi ed eseguire movimenti sul DDR.
+  In una futura analisi, sarà necessario capire se le funzionalità offerte da 'RobortSmart26' sono sufficienti a soddisfare le richieste del committente.
+
+
+• La <span style="color:rgb(255, 106, 0);"><b><i>hold</i></b></span> (stiva) viene modellata come un'area rettangolare che costituisce il riferimento spaziale per descrivere la posizione di alcuni elementi 
+  del sistema all'interno della rappresentazione interna della mappa utilizzata da RobotSmart26. Il concetto di hold risulta quindi fondamentale per formalizzare la collocazione di tali elementi 
+  rispetto alla mappa del software, garantendo una corrispondenza tra le posizioni logiche del sistema e le coordinate robotiche.
+
+  - <b><i>HOME</i></b> -- posizione di stazionamento del DDR
+  - <b><i>IOPort</i></b> -- zona di carico dei container (così chiamata nei requisiti)
+  - <b><i>slot</i></b> -- come area di parcheggio
+
+
+  Dai requisiti si evince che è necessario formalizzare un'associazione tra il nome identificativo di uno slot (slotId) e la sua posizione.
+  Di seguito viene mostrata la corrispondenza tra la stringa che identifica lo slot e la sua posizione in coordinate robotiche:
+  <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stringa Identificativa (Slot)</th>
+      <th style="padding: 8px;">Posizione / Coordinate Robotiche (X, Y)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">slot1</td>
+      <td style="padding: 8px;">(1, 1)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot2</td>
+      <td style="padding: 8px;">(1, 4)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot3</td>
+      <td style="padding: 8px;">(3, 1)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot4</td>
+      <td style="padding: 8px;">(3, 4)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">slot5</td>
+      <td style="padding: 8px;">(2, 5)</td>
+    </tr>
+  </tbody>
+</table>
+
+  Viene formalizzata anche la posizione dell'IOPort e della HOME:
+ <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Componente</th>
+      <th style="padding: 8px;">Posizione / Coordinate Robotiche (X, Y)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">IOPort</td>
+      <td style="padding: 8px;">(4, 0)</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">HOME</td>
+      <td style="padding: 8px;">(0, 0)</td>
+    </tr>
+</table>
+
+  Per rappresentare in modo strutturato le coordinate utilizzate da RobotSmart26, si introduce la classe POJO <b>Position</b>, 
+  che incapsula le coordinate intere X e Y in un unico oggetto. 
+  Questa scelta consente di trattare una posizione come un'entità distinta, anziché gestire le due coordinate separatamente.
+
+<code>
+  public class Position {
+    private final int x;
+    private final int y;
+
+    public Position(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // restituisce il valore della coordinata X come intero
+    public int getX() {
+        return x;
+    }
+
+    // restituisce il valore della coordinata Y come intero
+    public int getY() {
+        return y;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        Position position = (Position) o;
+        return x == position.x && y == position.y;
+    }
+
+    @Override
+    // restituisce il valore delle coordinate come stringa (X,Y)
+    public String toString() {
+        return "(" + x + "," + y + ')';
+    }
+}
+</code>
+
+
+  Attualmente la <b><i>hold</i></b> non presenta alcun comportamento proattivo; dunque, potrà essere rappresentata tramite un POJO.
+
+<code>
+public interface IHold {
+
+  //--IO-PORT:
+    // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
+    Position getIOPortPosition();
+
+  //--SLOT:
+    // restituisce lo slot identificato dal nome
+    ISlot getSlot(String slotId);
+
+    // verifica se esiste uno slot libero
+    boolean hasFreeSlot();
+    
+    // restituisce la posizione dello slot in coordinate RobotSmart (X,Y)
+    Position getSlotPosition(String slotId);
+
+    // restituisce il primo slot libero.
+    ISlot getFirstFreeSlot();
+
+}
+</code>
+
+• Uno <span style="color:rgb(255, 106, 0);"><b><i>slot</i></b></span> rappresenta una area di parcheggio di container all’interno della <b><i>hold</i></b>.
+
+  Dai requisiti emerge che ogni slot può assumere tre distinti stati: occupato, libero e riservato.
+
+  Gli <b><i>slot</i></b> sono in totale cinque. Lo "<b><i>slot5</i></b>" è riservato al processo di etichettatura di un container. 
+  Anche questa entità non ha alcun comportamento proattivo, ragion per cui verrà modellata come un POJO. L’area rappresentata da uno <b><i>slot</i></b> non è mobile; 
+  le sue coordinate sono strettamente dipendenti dalla <b><i>hold</i></b>.
+
+<code>
+public enum SlotStatus {
+  FREE,
+  OCCUPIED,
+  RESERVED
+}
+</code>
+<code>
+public interface ISlot {
+
+    // restituisce l'id dello slot
+    String getId();
+
+    // restituisce lo stato dello slot
+    SlotStatus getSlotStatus();
+
+    // imposta lo stato dello slot
+    void setSlotStatus(SlotStatus status);
+}
+</code>
+
+• Da requisiti il concetto di <span style="color:rgb(255, 106, 0);"><b><i>IOPort</i></b></span> presenta due significati differenti.
+
+  1. 'IOPort' intesa come area di carico dei container.
+  2. 'IOPort' come una Web-GUI che comunica attraverso un protocollo a messaggi asincrono.
+
+  Per evitare ambiguità, d'ora in avanti il secondo significato sarà indicato con il termine Web-GUI o con espressioni equivalenti, 
+  mentre IOPort farà riferimento all'area fisica destinata alle operazioni sui container, salvo diversa specificazione.
+  
+  La Web-GUI presenta due elementi funzionali:
+
+  - <b><i>pushbutton</i></b> viene premuto dal cliente per inviare una richiesta di carico; non ha alcun comportamento proattivo.
+  - <b><i>display</i></b> viene utilizzato come dispositivo di output di visualizzazione di messaggi dal <b><i>cargoservice</i></b>; non ha alcun comportamento proattivo.
+
+
+• <span style="color:rgb(255, 106, 0);"><b><i>sonar</i></b></span> è un componente hardware proattivo del sistema che ha il compito di misurare in maniera continua una determinata distanza e generare eventi.
+
+  Il committente vuole che questo sia integrato tramite un PicoW.
+
+  - <b><i>D</i></b> distanza rilevata dal sonar
+  - <b><i>DFREE</i></b> riferimento di distanza rilevata
+
+  Le sue caratteristiche portano a modellare il sonar come un componente proattivo in grado di interagire con il sistema comunicando informazioni.
+
+• <span style="color:rgb(255, 106, 0);"><b><i>LED</i></b></span> è un componente hardware in grado di emettere luce. 
+  In accordo con il committente, il LED farà parte dell'architettura del PicoW.
+
+
+</pre>
+<pre>
+<b>Macro-componenti individuati:</b>
+
+• <span style="color:red;"><b><i>cargoservice</i></b></span> 
+  - Si occupa della logica di business relativa alle richieste di movimentazione e allocazione dei container. 
+  - Presenta un comportamento proattivo in grado di aggiornare i dispositivi di output come display e led. 
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
+
+• <span style="color:red;"><b><i>cargorobot</i></b></span> 
+  - Il componente che realizza le operazioni richieste relative al DDR. 
+  - Presenta un comportamento proattivo, è capace di navigare autonomamente all’interno della hold. 
+  - Per l'esecuzione dei movimenti, utilizza come servizio esterno il software RobotSmart26.
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
+
+• <span style="color:red;"><b><i>webgui</i></b></span> 
+  - Il componente che si interfaccia con l'utente.
+  - In input un bottone, in output un display.
+  - È capace di comunicare e percepire messaggi ed eventi da altre entità.
+
+• <span style="color:red;"><b><i>sonar</i></b></span> 
+  - Rappresenta il componente hardware sonar del PicoW.
+
+• <span style="color:red;"><b><i>led</i></b></span> 
+  - Rappresenta il componente hardware led PicoW.
+</pre>
+ 
+<pre>
+<b>Modello e Nodi Computazionali:</b>
+
+Il sistema viene concepito come un sistema distribuito, in cui i processi e le entità software sono ripartiti tra più nodi computazionali. 
+In particolare, si individuano almeno due nodi distinti: uno dedicato all'esecuzione dei servizi software 
+e uno dedicato alla gestione dell'hardware basato su Raspberry Pi Pico W (PicoW).
+
+Questa separazione è motivata dai limiti delle risorse computazionali del PicoW, che non risulterebbero sufficienti a sostenere autonomamente 
+l'esecuzione dell'intero insieme di processi e la gestione di tutte le entità software previste. 
+È pertanto necessario affiancargli un'ulteriore macchina, dotata di maggiori risorse computazionali, sulla quale eseguire i servizi applicativi.
+
+Individuiamo i seguenti <span style="color:rgb(8, 176, 210);"><b>nodi</b></span>:
+
+• Un nodo dedicato all'esecuzione dei sevizi software (VirtualRobot26, RobortSmart26, cargoservice, cargorobot, webgui).
+
+• Un nodo fisico dedicato capace di gestire i componenti hardware quali sonar e led (PicoW).
+</pre>
+
+<pre>
+<b>Utilizzo di Qak:</b>
+
+Scegliamo di descrivere il sistema tramite modello <b>Qak</b> (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
+Questo DSL ci consente di formalizzare il concetto di messaggio e di attore come servizio come segue: <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa a Qak</a></b>. 
+Inoltre, ci permette di colmare l'abstraction gap tra la visione del dominio e i componenti software concreti, garantendo uno sviluppo rapido e coerente.
+
+</pre>
+
+<h2>Test plans</h2> 
+<pre>
+
+• Slot:
+<code>
+  private ISlot slot;
+
+  @Before
+  public void setUp() {
+    slot = null;
+  }
+
+  @Test
+  public void testGetId() {
+    assertEquals("slot1", slot.getId());
+  }
+
+  @Test
+  public void testDefaultIsFree() {
+        // uno slot appena creato è libero di default
+        assertEquals(SlotStatus.FREE, slot.getSlotStatus());
+  }
+
+  @Test
+  public void testSetIsOccupied() {
+        slot.setSlotStatus(SlotStatus.OCCUPIED);
+        assertEquals(SlotStatus.OCCUPIED, slot.getSlotStatus());
+  }
+
+  @Test
+  public void testSetIsFree() {
+        slot.setSlotStatus(SlotStatus.FREE);
+        assertEquals(SlotStatus.FREE, slot.getSlotStatus());
+  }
+</code>
+
+• Hold:
+<code>
+  private IHold hold;
+
+  @Before
+    public void setUp() {
+        hold = new Hold();
+  }
+
+  @Test
+    public void testGetSlot() {
+        // slot inizializzati da 1 a 5
+        ISlot s = hold.getSlot("slot1");
+        assertNotNull(s);
+        assertEquals("slot1", s.getId());
+  }
+
+  @Test
+    public void testHasFreeSlotWhenAllFree() {
+        // slot inizializzati sono liberi
+        assertTrue(hold.hasFreeSlot());
+  }
+
+  @Test
+    public void testHasFreeSlotWhenAllOccupied() {
+        // i requisiti indicano che gli slot da riservare sono slot1-4 (slot5 è per il marker)
+        for (int i = 1; i <= 4; i++) {
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
+        }
+        assertFalse(hold.hasFreeSlot());
+  }
+
+  @Test
+    public void testSlotPositions() {
+        // le posizioni degli slot sono inizializzate direttamente dalla Hold
+        assertEquals(new Position(1, 1), hold.getSlotPosition("slot1"));
+        assertEquals(new Position(1, 4), hold.getSlotPosition("slot2"));
+        assertEquals(new Position(3, 1), hold.getSlotPosition("slot3"));
+        assertEquals(new Position(3, 4), hold.getSlotPosition("slot4"));
+        assertEquals(new Position(2, 5), hold.getSlotPosition("slot5"));
+  }
+
+  @Test
+    public void testGetSlotPositionUnknownSlot() {
+        assertNull(hold.getSlotPosition("slot99"));
+  }
+
+  @Test
+    public void testGetFirstFreeSlot() {
+        // assumiamo che la hold ritorni il primo slot libero
+        hold.getSlot("slot1").setSlotStatus(SlotStatus.OCCUPIED);
+        ISlot free = hold.getFirstFreeSlot();
+        assertNotNull(free);
+        assertEquals("slot2", free.getId());
+  }
+
+  @Test
+    public void testGetFirstFreeSlotWhenFull() {
+        for (int i = 1; i <= 4; i++) {
+            hold.getSlot("slot" + i).setSlotStatus(SlotStatus.OCCUPIED);
+        }
+        assertNull(hold.getFirstFreeSlot());
+  }
+</code>
+</pre>
+ 
+<h2>Piano di lavoro</h2> 
+<pre>
+• <span style="color:red;"><b><i>SPRINT1</i></b></span> 
+  - Progettare e implementare la logica principale del sistema, ovvero la ricezione di una richiesta di carico e la sua esecuzione tramite il robot.
+  - [ Rif: cargoservice, cargorobot ]
+  - [ Tempo stimato: 40 ore-uomo] 
+• <span style="color:red;"><b><i>SPRINT2</i></b></span> 
+  - Realizzazione e implementazione della logica relativa ai componenti fisici che dovranno interagire con il sistema
+  - [ Rif: PicoW ]
+  - [ Tempo stimato: 35 ore-uomo] 
+• <span style="color:red;"><b><i>SPRINT3</i></b></span> 
+  - Sviluppare la Web-GUI e verificare il corretto funzionamento con le interazioni utente.
+  - [ Rif: webgui ]
+  - [ Tempo stimato: 30 ore-uomo] 
+</pre>
+ 
+<!-- USEFUL
+<table style="width:100%" border="1">
+<tr>
+<td style="width:50%">
+</td>
+<td></td>
+</tr>
+</table>
+-->
+	      	
+<br/><br/> 	
+</div>   
+
+<div style="background-color:rgba(86, 56, 253, 0.9); width:60%; text-align:left; color:white; padding:15px;">
+    <h3>Team</h3>
+    <p>
+        <strong>Alessandro Quaranta</strong> - alessandro.quaranta@studio.unibo.it<br>
+        <strong>Gaia Verzelli</strong> - gaia.verzelli@studio.unibo.it
+    </p>
+    <p>
+        <strong>Project GitHub repository:</strong><br>
+        <a href="https://github.com/bbnogaia/cargo-robot-2026" style="color:white;">
+            https://github.com/bbnogaia/cargo-robot-2026
+        </a>
+    </p>
+
+    <p>
+        <strong>Student GitHub repository:</strong><br>
+        <a href="https://github.com/alequaranta/iss2026quaranta" style="color:white;">
+            https://github.com/alequaranta/iss2026quaranta
+        </a>
+    </p>
+    <img src="./img/alessandro.jpg" alt="alessandro" width="15%" height="15%">
+    <img src="./img/gaia.jpg" alt="gaia" width="15%" height="15%">
+</div>
+</body>
+</html>
