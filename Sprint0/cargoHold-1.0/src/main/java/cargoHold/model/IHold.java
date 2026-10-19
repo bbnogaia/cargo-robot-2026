@@ -23,4 +23,6 @@ public interface IHold {
     // restituisce il primo slot libero
     ISlot getFirstFreeSlot();
 
+    // Metodo per persistere lo stato attuale su file
+    void saveState();
 }

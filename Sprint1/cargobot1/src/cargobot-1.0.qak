@@ -46,8 +46,13 @@ ExternalQActor robotsmart context ctxrobotsmart
  * CARGOHOLD 
  * -------------------------------------------------------------------------
  */
+
+ // ATTENTION: in questo modo fa sempre un avvio pulito
 QActor cargohold context ctxcargocompany withobj hold : Hold {
     import "main.java.cargoHold.model.*"
+
+// ATTENTION: se volessimo ricaricare sempre lo stato precedente (dal file "cargohold_state.txt"):
+// QActor cargohold context ctxcargocompany withobj hold : Hold(true)
 
     State s0 initial {
         println("$name | init e caricamento modello CargoHold tramite withobj") color cyan
@@ -73,6 +78,9 @@ QActor cargohold context ctxcargocompany withobj hold : Hold {
                     val freeSlot = hold.getFirstFreeSlot()
                     val assignedId = freeSlot.getId()
                     freeSlot.setSlotStatus(SlotStatus.RESERVED)
+
+					// Salva lo stato persistente
+    				hold.saveState()
                 #]
                 println("$name | Slot riservato: $assignedId") color cyan
                 replyTo requestSlot with slotReserved : slotReserved($assignedId)
@@ -99,6 +107,9 @@ QActor cargohold context ctxcargocompany withobj hold : Hold {
                         "reserved" -> slotObj.setSlotStatus(SlotStatus.RESERVED)
                         "occupied" -> slotObj.setSlotStatus(SlotStatus.OCCUPIED)
                     }
+
+					// Salva lo stato persistente
+    				hold.saveState()
                 #]
                 println("$name | Slot $sId aggiornato a stato: $sState") color cyan
                 replyTo setSlot with setSlotChanged : setSlotChanged(NOARGS)
