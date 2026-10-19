@@ -142,29 +142,36 @@ QActor cargoservice context ctxcargocompany
 •  <span style="color:rgb(0, 85, 255);"><b>cargohold &leftrightarrow; cargoservice</b></span>
   <code>
     Request requestSlot : requestSlot(NOARGS)
-    Reply slotReserved: slotReserved(ANSWER) for requestSlot
-    Reply slotFailed: slotFailed(REASON) for requestSlot
+    Reply slotReserved : slotReserved(ANSWER) for requestSlot
+    Reply slotFailed : slotFailed(REASON) for requestSlot
 
     Request setSlot : setSlot(SLOTID, STATE)
     Reply setSlotChanged : setSlotChanged(NOARGS) for setSlot
     Reply setSlotFailed : setSlotFailed(REASON) for setSlot
+
+    Request requestPosition : requestPosition(SLOTID)
+    Reply slotPosition : slotPosition(X, Y) for requestPosition
+    Reply positionFailed : positionFailed(REASON) for requestPosition
   </code>
   Richieste attese:
   - <b>setSlot</b>: slotId, stato "free", "reserved" o "occupied"
+  - <b>requestPosition</b>: slotId
 
   Risposte attese:
   - <b>slotReserved</b>: slotId riservato
+  - <b>slotPosition</b>: coordinate X, Y
   - <b>slotFailed</b>: motivazione
   - <b>setSlotFailed</b>: motivazione
+  - <b>positionFailed</b>: motivazione
 
 • <span style="color:red;"><b>cargoservice</b></span> accetta richieste di carico tramite la seguente sintassi:
 
   •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; webgui</b></span>
   <code>
     Request requestToLoad : requestToLoad(NOARGS)
-    Reply loadAccepted: loadAccepted(ANSWER) for requestToLoad
-    Reply loadRejected: loadRejected(ANSWER) for requestToLoad
-    Reply loadRetryLater: loadRetryLater(ANSWER) for requestToLoad
+    Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
+    Reply loadRejected : loadRejected(ANSWER) for requestToLoad
+    Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
   </code>
   Risposte attese:
   - <b>loadAccepted</b>: slotId riservato
@@ -178,7 +185,7 @@ Si evidenziano i più rilevanti:
  <code>
     Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
     Reply moverobotdone : moverobotdone(ARG) for moverobot 
-    Reply moverobotfailed: moverobotfailed(PLANDONE, PLANTODO) for moverobot 
+    Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
  </code>
 
 
