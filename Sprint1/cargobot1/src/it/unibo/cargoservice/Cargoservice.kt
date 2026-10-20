@@ -24,7 +24,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
           ActorBasicFsm( name, scope, confined=isconfined, dynamically=isdynamic ){
 
 	override fun getInitialState() : String{
-		return "s0"
+		return "initAskIOPort"
 	}
 	override fun getBody() : (ActorBasicFsm.() -> Unit){
 		//val interruptedStateTransitions = mutableListOf<Transition>()
@@ -40,7 +40,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 		        var IOPortX: Int = 0
 		        var IOPortY: Int = 0
 		return { //this:ActionBasciFsm
-				state("s0") { //this:State
+				state("initAskIOPort") { //this:State
 					action { //it:State
 						CommUtils.outgreen("$name | init cargoservice: richiedo posizioni fisse (ioport, slot5, home)...")
 						delay(1000) 
@@ -138,9 +138,9 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t110",targetState="confirmLoadToClient",cond=whenReply("slotReserved"))
-					transition(edgeName="t111",targetState="handleSlotFailed",cond=whenReply("slotFailed"))
+					transition(edgeName="t111",targetState="handleLoadFailed",cond=whenReply("slotFailed"))
 				}	 
-				state("handleSlotFailed") { //this:State
+				state("handleLoadFailed") { //this:State
 					action { //it:State
 						CommUtils.outmagenta("$name | Nessuno slot disponibile. Rispondo loadRejected.")
 						answer("requestToLoad", "loadRejected", "loadRejected(rejected)"   )  
@@ -175,10 +175,10 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t212",targetState="saveSlotPositionAndWaiting",cond=whenReply("slotPosition"))
+					 transition(edgeName="t212",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
 					transition(edgeName="t213",targetState="handleRobotFailure",cond=whenReply("positionFailed"))
 				}	 
-				state("saveSlotPositionAndWaiting") { //this:State
+				state("saveSlotPosition") { //this:State
 					action { //it:State
 						if( checkMsgContent( Term.createTerm("slotPosition(X,Y)"), Term.createTerm("slotPosition(X,Y)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList

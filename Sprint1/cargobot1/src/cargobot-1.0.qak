@@ -174,8 +174,12 @@ QActor cargoservice context ctxcargocompany {
         var IOPortY: Int = 0
     #]
     
-    // --- INIT: Caricamento posizioni fisse all'avvio ---
-    State s0 initial {
+    /**
+     *  STATE INIT: ----------------------------------------------------------
+     *  caricamento delle coordinate fisse: IOPort, Slot5, Home
+     */
+     
+    State initAskIOPort initial {
         println("$name | init cargoservice: richiedo posizioni fisse (ioport, slot5, home)...") color green
         delay 1000 // Piccolo delay per assicurarsi che cargohold sia pronto ad accettare richieste
         request cargohold -m requestPosition : requestPosition(ioport)
@@ -230,14 +234,21 @@ QActor cargoservice context ctxcargocompany {
     Goto disengaged
 
     
-    //--- STATE: DISENGAGED ---------------------
+     /**
+     *  STATE DISENGAGED: ----------------------------------------------------------
+     *  il sistema rimane in attesa di richieste di carico
+     */
     State disengaged {
         println("$name | disengaged (in attesa di richieste)") color magenta
     }
     Transition t0
         whenRequest requestToLoad -> handleLoad
         
-    //--- STATE: LOAD ---------------------
+    /**
+     *  STATE LOAD: -------------------------------------------------------------------
+     *  il sistema riceve una richiesta di carico
+     *  e verifica la disponibilità degli slot
+     */
     State handleLoad {
         onMsg( requestToLoad : requestToLoad(NOARGS) ) {
             println("$name | ricevuta richiesta requestToLoad") color magenta
@@ -246,9 +257,9 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t1
         whenReply slotReserved -> confirmLoadToClient
-        whenReply slotFailed -> handleSlotFailed
+        whenReply slotFailed -> handleLoadFailed
 
-    State handleSlotFailed {
+    State handleLoadFailed {
         println("$name | Nessuno slot disponibile. Rispondo loadRejected.") color magenta
         replyTo requestToLoad with loadRejected : loadRejected(rejected)
     }
@@ -270,10 +281,10 @@ QActor cargoservice context ctxcargocompany {
         request cargohold -m requestPosition : requestPosition($AssignedSlotId)
     }
     Transition t2
-        whenReply slotPosition -> saveSlotPositionAndWaiting
+        whenReply slotPosition -> saveSlotPosition
         whenReply positionFailed -> handleRobotFailure
 
-    State saveSlotPositionAndWaiting {
+    State saveSlotPosition {
         onMsg( slotPosition : slotPosition(X, Y) ) {
             [#
                 TargetX = payloadArg(0).toInt()
@@ -284,7 +295,11 @@ QActor cargoservice context ctxcargocompany {
     }
     Goto waitForContainer
 
-    // --- ATTESA CONTAINER NELL'AREA SENSORE (Timeout 30s) ---
+     /**
+     *  STATE WAITCONTAINER: -------------------------------------------------------------------------------------
+     *  attesa del posizionamento del container
+     */
+     
     State waitForContainer {
         println("$name | In attesa del container nell'area sensore (max 30s)...") color magenta
     }
@@ -305,6 +320,13 @@ QActor cargoservice context ctxcargocompany {
         println("$name | Slot liberato. Torno in disengaged.") color magenta
     }
     Goto disengaged
+
+	 /**
+     *  STATE ENGAGED: ----------------------------------------------------------
+     *  il sistema riceve una richiesta di carico
+     *  e verifica la disponibilità degli slot
+     */
+
 
     // --- STEP 0: Il robot raggiunge l'IOPort per prelevare il container ---
     State moveToIOPort {
