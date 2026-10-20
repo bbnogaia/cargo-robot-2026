@@ -46,9 +46,13 @@ ExternalQActor robotsmart context ctxrobotsmart
  * CARGOHOLD 
  * -------------------------------------------------------------------------
  */
-QActor cargohold context ctxcargocompany withobj hold : Hold {
+QActor cargohold context ctxcargocompany{
     import "main.java.cargoHold.model.*"
 
+	[#
+		var hold: IHold = Hold()
+	#]
+		
     State s0 initial {
         println("$name | init e caricamento modello CargoHold tramite withobj") color cyan
     }
@@ -71,11 +75,11 @@ QActor cargohold context ctxcargocompany withobj hold : Hold {
             if [# hasSpace #] {
                 [#
                     val freeSlot = hold.getFirstFreeSlot()
-                    val assignedId = freeSlot.getId()
+                    val AssignedId = freeSlot.getId()
                     freeSlot.setSlotStatus(SlotStatus.RESERVED)
                 #]
-                println("$name | Slot riservato: $assignedId") color cyan
-                replyTo requestSlot with slotReserved : slotReserved($assignedId)
+                println("$name | Slot riservato: $AssignedId") color cyan
+                replyTo requestSlot with slotReserved : slotReserved($AssignedId)
             } else {
                 println("$name | Nessuno slot libero disponibile") color red
                 replyTo requestSlot with slotFailed : slotFailed(nospace)
@@ -114,36 +118,36 @@ QActor cargohold context ctxcargocompany withobj hold : Hold {
         onMsg( requestPosition : requestPosition(LOCATION) ) {
             [#
                 val locId = payloadArg(0)
-                var posX = 0
-                var posY = 0
+                var PosX = 0
+                var PosY = 0
                 var found = false
                 
                 if (locId == "ioport") {
                     val pIOPort = hold.getIOPortPosition()
                     if (pIOPort != null) {
-                        posX = pIOPort.getX()
-                        posY = pIOPort.getY()
+                        PosX = pIOPort.getX()
+                        PosY = pIOPort.getY()
                         found = true
                     }
                 } else if (locId == "home") {
                     val pHome = hold.getHomePosition()
                     if (pHome != null) {
-                        posX = pHome.getX()
-                        posY = pHome.getY()
+                        PosX = pHome.getX()
+                        PosY = pHome.getY()
                         found = true
                     }
                 } else {
                     val pos = hold.getSlotPosition(locId)
                     if (pos != null) {
-                        posX = pos.getX()
-                        posY = pos.getY()
+                        PosX = pos.getX()
+                        PosY = pos.getY()
                         found = true
                     }
                 }
             #]
             if [# found #] {
-                println("$name | Posizione per $locId: ($posX, $posY)") color cyan
-                replyTo requestPosition with slotPosition : slotPosition($posX, $posY)
+                println("$name | Posizione per $locId: ($PosX, $PosY)") color cyan
+                replyTo requestPosition with slotPosition : slotPosition($PosX, $PosY)
             } else {
                 replyTo requestPosition with positionFailed : positionFailed(notfound)
             }

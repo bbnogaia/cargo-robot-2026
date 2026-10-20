@@ -214,6 +214,10 @@ Una società di trasporto che chiameremo semplicemente <b><i>company</i></b> int
 <code>
 public interface IHold {
 
+  // -- HOME:
+    // restituisce la posizione della HOME in coordinate RobotSmart (X,Y)
+    Position getHomePosition();
+
   //--IO-PORT:
     // restituisce la posizione dell'IOPort in coordinate RobotSmart (X,Y)
     Position getIOPortPosition();

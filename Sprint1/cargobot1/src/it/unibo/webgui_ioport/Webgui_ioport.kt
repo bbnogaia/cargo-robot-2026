@@ -32,7 +32,7 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 		return { //this:ActionBasciFsm
 				state("s0") { //this:State
 					action { //it:State
-						CommUtils.outgreen("$name | init ")
+						CommUtils.outyellow("$name | init ")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -42,32 +42,46 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 				}	 
 				state("mockReq") { //this:State
 					action { //it:State
-						CommUtils.outyellow("$name | wait for action")
-						CommUtils.outyellow("$name | request to load")
+						CommUtils.outyellow("$name | Simulazione richiesta requestToLoad...")
 						request("requestToLoad", "requestToLoad(NOARGS)" ,"cargoservice" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t09",targetState="handleAnswer",cond=whenReply("loadAnswer"))
+					 transition(edgeName="t028",targetState="handleAccepted",cond=whenReply("loadAccepted"))
+					transition(edgeName="t029",targetState="handleRejected",cond=whenReply("loadRejected"))
+					transition(edgeName="t030",targetState="handleRetry",cond=whenReply("loadRetryLater"))
 				}	 
-				state("handleAnswer") { //this:State
+				state("handleAccepted") { //this:State
 					action { //it:State
-						if( checkMsgContent( Term.createTerm("loadAnswer(ANSWER)"), Term.createTerm("loadAnswer(ANSWER)"), 
+						if( checkMsgContent( Term.createTerm("loadAccepted(ANSWER)"), Term.createTerm("loadAccepted(ANSWER)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList
-								
-								        	var ans = payloadArg(0)
-								if(  ans.startsWith("slot")  
-								 ){CommUtils.outyellow("$name | success: $ans")
-								}
-								if(  ans == "retrylater"  
-								 ){CommUtils.outyellow("$name | retrylater")
-								}
-								if(  ans == "rejected"  
-								 ){CommUtils.outyellow("$name | rejected")
-								}
+								 var ans = payloadArg(0)  
+								CommUtils.outyellow("$name | Richiesta ACCETTATA. Slot: $ans")
 						}
+						delay(14000) 
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+					 transition( edgeName="goto",targetState="mockReq", cond=doswitch() )
+				}	 
+				state("handleRejected") { //this:State
+					action { //it:State
+						CommUtils.outyellow("$name | Richiesta RIFIUTATA")
+						delay(14000) 
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+					 transition( edgeName="goto",targetState="mockReq", cond=doswitch() )
+				}	 
+				state("handleRetry") { //this:State
+					action { //it:State
+						CommUtils.outyellow("$name | Richiesta RETRY LATER")
 						delay(14000) 
 						//genTimer( actor, state )
 					}
