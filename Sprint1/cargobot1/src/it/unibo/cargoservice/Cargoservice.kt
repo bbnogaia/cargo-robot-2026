@@ -113,7 +113,6 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
 				}	 
 				state("disengaged") { //this:State
 					action { //it:State
@@ -176,7 +175,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t212",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
-					transition(edgeName="t213",targetState="handleRobotFailure",cond=whenReply("positionFailed"))
+					transition(edgeName="t213",targetState="handlePositionFail",cond=whenReply("positionFailed"))
 				}	 
 				state("saveSlotPosition") { //this:State
 					action { //it:State
@@ -193,6 +192,16 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition( edgeName="goto",targetState="waitForContainer", cond=doswitch() )
+				}	 
+				state("handlePositionFail") { //this:State
+					action { //it:State
+						CommUtils.outmagenta("$name | Slot inesistente...")
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
 				}	 
 				state("waitForContainer") { //this:State
 					action { //it:State
@@ -216,18 +225,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t716",targetState="disengagedGoto",cond=whenReply("setSlotChanged"))
-					transition(edgeName="t717",targetState="disengagedGoto",cond=whenReply("setSlotFailed"))
-				}	 
-				state("disengagedGoto") { //this:State
-					action { //it:State
-						CommUtils.outmagenta("$name | Slot liberato. Torno in disengaged.")
-						//genTimer( actor, state )
-					}
-					//After Lenzi Aug2002
-					sysaction { //it:State
-					}	 	 
-					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
+					 transition(edgeName="t716",targetState="disengaged",cond=whenReply("setSlotChanged"))
+					transition(edgeName="t717",targetState="disengaged",cond=whenReply("setSlotFailed"))
 				}	 
 				state("moveToIOPort") { //this:State
 					action { //it:State
@@ -239,7 +238,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t818",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
-					transition(edgeName="t819",targetState="handleRobotFailure",cond=whenReply("moverobotfailed"))
+					transition(edgeName="t819",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("moveToSlot5") { //this:State
 					action { //it:State
@@ -252,7 +251,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t920",targetState="markContainer",cond=whenReply("moverobotdone"))
-					transition(edgeName="t921",targetState="handleRobotFailure",cond=whenReply("moverobotfailed"))
+					transition(edgeName="t921",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("markContainer") { //this:State
 					action { //it:State
@@ -275,7 +274,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t1022",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
-					transition(edgeName="t1023",targetState="handleRobotFailure",cond=whenReply("moverobotfailed"))
+					transition(edgeName="t1023",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finalizeStorage") { //this:State
 					action { //it:State
@@ -299,7 +298,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					sysaction { //it:State
 					}	 	 
 					 transition(edgeName="t1226",targetState="finishOperation",cond=whenReply("moverobotdone"))
-					transition(edgeName="t1227",targetState="handleRobotFailure",cond=whenReply("moverobotfailed"))
+					transition(edgeName="t1227",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finishOperation") { //this:State
 					action { //it:State
@@ -311,15 +310,29 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					}	 	 
 					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
 				}	 
-				state("handleRobotFailure") { //this:State
+				state("handlePreDeliveryFailure") { //this:State
 					action { //it:State
-						CommUtils.outred("$name | errore: movimento del cargorobot fallito!")
+						CommUtils.outred("$name | errore pre-delivery: movimento del cargorobot fallito!")
+						request("setSlot", "setSlot($AssignedSlotId,free)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
+					 transition(edgeName="tPreError28",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="tPreError29",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+				}	 
+				state("handlePostDevliveryFailure") { //this:State
+					action { //it:State
+						CommUtils.outred("$name | Errore post-delivery: movimento del cargorobot fallito! Tentativo di rientro HOME...")
+						request("moverobot", "moverobot($HomeX,$HomeY,330)" ,"robotsmart" )  
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+					 transition(edgeName="tPostHome30",targetState="disengaged",cond=whenReply("moverobotdone"))
+					transition(edgeName="tPostHome31",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 			}
 		}

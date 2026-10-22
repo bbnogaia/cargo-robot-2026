@@ -28,5 +28,5 @@ context(ctxrobotsmart, "127.0.0.1",  "TCP", "8020").
  static(cargoservice).
   qactor( mocksonar, ctxcargocompany, "it.unibo.mocksonar.Mocksonar").
  static(mocksonar).
-  qactor( webgui_ioport, ctxcargocompany, "it.unibo.webgui_ioport.Webgui_ioport").
- static(webgui_ioport).
+  qactor( mockwebgui, ctxcargocompany, "it.unibo.mockwebgui.Mockwebgui").
+ static(mockwebgui).

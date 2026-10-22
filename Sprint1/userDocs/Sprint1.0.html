@@ -85,25 +85,40 @@ A partire da quanto svolto nello Sprint0, ci concentriamo sui seguenti requisiti
 <pre>
 <b>Componenti non-attivi e introduzione di cargohold:</b>
 
-• Per rappresentare in modo strutturato lo stato della hold e dei suoi componenti, si introducono apposite classi POJO, 
+• Per rappresentare in modo strutturato lo stato della hold e dei suoi componenti, si introducono apposite classi POJO
+  (già presentate e discusse nello Sprint0), 
   che consentono di modellare le informazioni relative alla configurazione spaziale della stiva e allo stato degli slot.
 
-• Una volta definita la rappresentazione della hold e dei relativi componenti, è necessario individuare quale entità del sistema debba essere 
-  responsabile della gestione e della persistenza del suo stato durante l'esecuzione. Tale responsabilità non dovrebbe essere affidata a cargoservice, 
-  poiché un suo eventuale riavvio a runtime comporterebbe la nuova istanziazione degli oggetti utilizzati per rappresentare lo stato della stiva, 
-  con il rischio di perdere le informazioni accumulate durante l'esecuzione. Per evitare questa dipendenza e garantire una maggiore separazione delle responsabilità, 
-  si sceglie di introdurre un <b>nuovo microservizio proattivo</b>, dedicato alla gestione e al mantenimento dello stato della hold e dei suoi componenti: <span style="color:red;"><b>cargohold</b></span>. 
-  Questa entità avrà il compito di monitorare e aggiornare lo stato del sistema, rendendolo disponibile agli altri servizi attraverso opportune interfacce di comunicazione. 
-  In questo modo, cargoservice potrà concentrarsi sulle proprie responsabilità applicative, delegando la gestione dello stato a un componente dedicato.
+• Una volta definita la rappresentazione della hold e dei relativi componenti, è necessario individuare quale entità 
+  del sistema debba essere responsabile della gestione e della persistenza del suo stato durante l'esecuzione. 
+  Tale responsabilità non dovrebbe essere affidata a cargoservice, poiché un suo eventuale riavvio a runtime 
+  comporterebbe la nuova istanziazione degli oggetti utilizzati per rappresentare lo stato della stiva, 
+  con il rischio di perdere le informazioni accumulate durante l'esecuzione. 
+  Per evitare questa dipendenza e garantire una maggiore separazione delle responsabilità, 
+  si sceglie di introdurre un <b>nuovo microservizio proattivo</b>, dedicato alla gestione e al 
+  mantenimento dello stato della hold e dei suoi componenti: <span style="color:red;"><b>cargohold</b></span>. 
+  Questa entità avrà il compito di monitorare e aggiornare lo stato del sistema, rendendolo disponibile agli altri 
+  servizi attraverso opportune interfacce di comunicazione. In questo modo, cargoservice potrà concentrarsi sulle 
+  proprie responsabilità applicative, delegando la gestione dello stato a un componente dedicato.
+
+• Le modalità di mantenimento dello stato sono affidate al progettista. Si individuano, tuttavia, tre possibili soluzioni:
+  - <b>Salvataggio su database</b>: lo stato del sistema viene salvato e mantenuto in un database. 
+    (Questa soluzione non è ritenuta idonea dal committente, in quanto comporterebbe la necessità di gestire e mantenere un database dedicato.)
+  - <b>Salvataggio su file locale</b>: lo stato del sistema viene salvato in un semplice file sullo stesso nodo di elaborazione.
+  - <b>Gestione a runtime</b>: lo stato del sistema dipende dal processo in esecuzione. In caso di errore o arresto di cargohold, il sistema viene reinizializzato.
+
+• L'introduzione di <span style="color:red;"><b>cargohold</b></span> come servizio separato rende la sua gestione scalabile e modificabile nel tempo.
 </pre>
 
 <pre>
 <b>Relazione cargorobot &leftrightarrow; robotsmart26:</b>
 
-• Sulla base dei requisiti e delle indicazioni fornite dal committente, si stabilisce che i due componenti software robotsmart26 e cargorobot siano da considerarsi equivalenti 
-  e facciano riferimento alla medesima entità all'interno dell'architettura del sistema. 
-  Tale scelta consente di uniformare la terminologia utilizzata nella documentazione, evitando ambiguità nell'identificazione del componente e nella descrizione delle sue responsabilità. 
-  Di conseguenza, da questo punto in avanti, <b>i termini robotsmart26 e cargorobot saranno utilizzati in modo intercambiabile</b>, senza che ciò implichi l'esistenza di due componenti software distinti.
+• Sulla base dei requisiti e delle indicazioni fornite dal committente, si stabilisce che i due componenti software robotsmart26 e cargorobot 
+  siano da considerarsi equivalenti e facciano riferimento alla medesima entità all'interno dell'architettura del sistema. 
+  Tale scelta consente di uniformare la terminologia utilizzata nella documentazione, evitando ambiguità nell'identificazione 
+  del componente e nella descrizione delle sue responsabilità. 
+  Di conseguenza, da questo punto in avanti, <b>i termini robotsmart26 e cargorobot saranno utilizzati in modo intercambiabile</b>, 
+  senza che ciò implichi l'esistenza di due componenti software distinti.
 
 • Si osserva che robotsmart26 non gestisce lo stato degli slot, ma come già anticipato, sarà compito cargohold.
 </pre>
@@ -193,6 +208,156 @@ Si evidenziano i più rilevanti:
   depositati i messaggi a loro inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
 </pre>
 
+<pre>
+<b>Stati del sistema cargoservice:</b>
+
+L'analisi comportamentale di cargoservice porta attualmente ai seguenti stati:
+<img src="./img/statiCargo.png" alt="emiglio" width="100%" height="100%">
+
+• <b>MARCO-STATO: INIT</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">initAskIOPort</td>
+      <td style="padding: 8px;">Stato iniziale del sistema. Richiede a cargohold le coordinate dell'IOPort.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">initAskSlot5</td>
+      <td style="padding: 8px;">Salva le coordinate dell'IOPort. Richiede a cargohold le coordinate dello Slot5.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">initAskHome</td>
+      <td style="padding: 8px;">Salva le coordinate dello Slot5. Richiede a cargohold le coordinate della Home.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">initComplete</td>
+      <td style="padding: 8px;">Salva le coordinate della Home. Termina la fase di INIT.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">initError</td>
+      <td style="padding: 8px;">Gestisce eventuali errori durante l’inizializzazione del sistema, per i quali è necessario procedere al riavvio.</td>
+    </tr>
+</table>
+
+• <b>MARCO-STATO: DISENGAGED</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">disengaged</td>
+      <td style="padding: 8px;">Stato in cui il sistema rimane in attesa di nuove richieste di carico.</td>
+    </tr>
+</table>
+
+• <b>MARCO-STATO: LOAD</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">handleLoad</td>
+      <td style="padding: 8px;">Gestisce una richiesta di carico. Richiede a cargohold se è presente uno slot libero.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">confirmLoadToClient</td>
+      <td style="padding: 8px;">Se lo slot è stato riservarto, comunica lo slotId alla webgui.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handleLoadFailed</td>
+      <td style="padding: 8px;">Se non sono presenti slot liberi, comunica 'retrylater' alla webgui.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">askSlotPosition</td>
+      <td style="padding: 8px;">Richiede a cargohold le coordinate dello slot riservato.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">saveSlotPosition</td>
+      <td style="padding: 8px;">Salva le coordinate dello slot riservarto.</td>
+    </tr>
+</table>
+
+• <b>MARCO-STATO: WAITCONTAINER</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">waitForContainer</td>
+      <td style="padding: 8px;">Attende (max 30 sec.) che il sonar rilevi la presenza di un container nella zona di carico IOPort.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handleTimeOut</td>
+      <td style="padding: 8px;">Lo slot precedentemente assegnato torna libero.</td>
+    </tr>
+</table>
+
+• <b>MARCO-STATO: ENGAGED</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">moveToIOPort</td>
+      <td style="padding: 8px;">Il DDR viene comandato fino all'IOPOrt.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">moveSlot5</td>
+      <td style="padding: 8px;">Il DDR viene comandato fino allo Slot5.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">markContainer</td>
+      <td style="padding: 8px;">Il DDR attende la marcatura del container.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">moveToFinalSlot</td>
+      <td style="padding: 8px;">Il DDR viene comandato fino allo slot riservato.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">finalizeStorage</td>
+      <td style="padding: 8px;">Se tutto è andato a buon fine, cargoservice chiede a cargohold di impostare lo stato dello slot come occupato.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">returnToHome</td>
+      <td style="padding: 8px;">Il DDR ritorna alla Home.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">finishOperation</td>
+      <td style="padding: 8px;">Il DDR ha finito di svolgere il suo ciclo di operazioni ed è tornato con successo alla Home.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handlePreDeliveryFailure</td>
+      <td style="padding: 8px;">Gestisce errori di movimento legati ad alcuni stati (come da immagine).</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handlePostDeliveryFailure</td>
+      <td style="padding: 8px;">Gestisce errori di movimento legati ad alcuni stati (come da immagine).</td>
+    </tr>
+</table>
+
+</pre>
 
 <h2>Test plans</h2> 
 <pre>
@@ -245,10 +410,18 @@ Si evidenziano i più rilevanti:
 
 <h2>Project</h2> 
 <pre>
-In questa fase di progetto viene sviluppato un primo software eseguibile:
+• Sulla base delle interfacce individuate nello Sprint0, in relazione ai componenti non-attivi,
+  viene prodotta una libreria contente l'insieme delle classi POJO: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/tree/main/Sprint1/cargoHold-1.0'>cargoHold-1.0.jar</a></b>. 
 
-• <span style="color:rgb(6, 181, 41);"><b><i>Core business</i></b></span> 
-  <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Codice Qak</a></b>
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Position</a></b>
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Slot</a></b>
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Hold</a></b>
+
+• Il servizio <b>cargohold</b> usa <b>cargoHold-1.0.jar</b>.
+  Attualmente non si ritiene necessario il salvataggio dello stato del sistema su un file esterno.
+  Lo stato verrà mantenuto finchè il servizio rimarrà attivo sul nodo.
+
+• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Qak eseguibile</a></b> del sistema.
 
 </pre>
 

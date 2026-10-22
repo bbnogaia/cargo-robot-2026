@@ -49,9 +49,9 @@ class Webgui_ioport ( name: String, scope: CoroutineScope, isconfined: Boolean=f
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t028",targetState="handleAccepted",cond=whenReply("loadAccepted"))
-					transition(edgeName="t029",targetState="handleRejected",cond=whenReply("loadRejected"))
-					transition(edgeName="t030",targetState="handleRetry",cond=whenReply("loadRetryLater"))
+					 transition(edgeName="t032",targetState="handleAccepted",cond=whenReply("loadAccepted"))
+					transition(edgeName="t033",targetState="handleRejected",cond=whenReply("loadRejected"))
+					transition(edgeName="t034",targetState="handleRetry",cond=whenReply("loadRetryLater"))
 				}	 
 				state("handleAccepted") { //this:State
 					action { //it:State

@@ -279,7 +279,7 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t2
         whenReply slotPosition -> saveSlotPosition
-        whenReply positionFailed -> handleRobotFailure
+        whenReply positionFailed -> handlePositionFail
 
     State saveSlotPosition {
         onMsg( slotPosition : slotPosition(X, Y) ) {
@@ -291,6 +291,11 @@ QActor cargoservice context ctxcargocompany {
         }
     }
     Goto waitForContainer
+    
+    State handlePositionFail {
+    	println("$name | Slot inesistente...") color magenta
+    }
+    Goto disengaged
 
      /**
      *  STATE WAITCONTAINER: -------------------------------------------------------------------------------------
@@ -310,13 +315,9 @@ QActor cargoservice context ctxcargocompany {
         request cargohold -m setSlot : setSlot($AssignedSlotId, free)
     }
     Transition t7
-        whenReply setSlotChanged -> disengagedGoto
-        whenReply setSlotFailed -> disengagedGoto
+        whenReply setSlotChanged -> disengaged
+        whenReply setSlotFailed -> disengaged
 
-    State disengagedGoto {
-        println("$name | Slot liberato. Torno in disengaged.") color magenta
-    }
-    Goto disengaged
 
 	 /**
      *  STATE ENGAGED: ----------------------------------------------------------
@@ -397,7 +398,7 @@ QActor cargoservice context ctxcargocompany {
         request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
     }
     Transition tPostHome
-        whenReply moverobotdone -> disengagedGoto
+        whenReply moverobotdone -> disengaged
         whenReply moverobotfailed -> handlePostDevliveryFailure
 }
 
@@ -427,7 +428,7 @@ QActor mocksonar context ctxcargocompany {
  * MOCK WEB-GUI
  * -------------------------------------------------------------------------
  */
-QActor webgui_ioport context ctxcargocompany {
+QActor mockwebgui context ctxcargocompany {
     
     State s0 initial {
         println("$name | init ") color yellow   
