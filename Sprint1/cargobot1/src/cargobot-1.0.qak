@@ -230,10 +230,7 @@ QActor cargoservice context ctxcargocompany {
     State initError {
         println("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio!") color red
     }
-	// TODO: che succede se davvero dovesse fallire? non credo abbia senso che vada in disengaged
-    Goto disengaged
 
-    
      /**
      *  STATE DISENGAGED: ----------------------------------------------------------
      *  il sistema rimane in attesa di richieste di carico
@@ -335,7 +332,7 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t8
         whenReply moverobotdone -> moveToSlot5
-        whenReply moverobotfailed -> handleRobotFailure
+        whenReply moverobotfailed -> handlePreDeliveryFailure
 
     // --- STEP 1: Muove il robot dall'IOPort allo slot5 per la marcatura ---
     State moveToSlot5 {
@@ -345,7 +342,7 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t9
         whenReply moverobotdone -> markContainer
-        whenReply moverobotfailed -> handleRobotFailure
+        whenReply moverobotfailed -> handlePreDeliveryFailure
 
     // --- STEP 2: Attesa marcatura (simulata con delay o segnale marker) ---
     State markContainer {
@@ -361,7 +358,7 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t10
         whenReply moverobotdone -> finalizeStorage
-        whenReply moverobotfailed -> handleRobotFailure
+        whenReply moverobotfailed -> handlePreDeliveryFailure
 
     // --- STEP 4: Finalizzazione nello storage ---
     State finalizeStorage {
@@ -379,7 +376,7 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition t12
         whenReply moverobotdone -> finishOperation
-        whenReply moverobotfailed -> handleRobotFailure
+        whenReply moverobotfailed -> handlePostDevliveryFailure
 
     State finishOperation {
         println("$name | Cargorobot rientrato alla HOME con successo. Sistema disengaged.") color green
@@ -387,10 +384,21 @@ QActor cargoservice context ctxcargocompany {
     Goto disengaged
 
     // --- STATE: GESTIONE ERRORI ROBOT ---
-    State handleRobotFailure {
-        println("$name | errore: movimento del cargorobot fallito!") color red
+    State handlePreDeliveryFailure {
+        println("$name | errore pre-delivery: movimento del cargorobot fallito!") color red
+        request cargohold -m setSlot : setSlot($AssignedSlotId, free)
     }
-    Goto disengaged
+    Transition tPreError
+        whenReply setSlotChanged -> returnToHome
+        whenReply setSlotFailed -> returnToHome
+
+    State handlePostDevliveryFailure {
+        println("$name | Errore post-delivery: movimento del cargorobot fallito! Tentativo di rientro HOME...") color red
+        request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
+    }
+    Transition tPostHome
+        whenReply moverobotdone -> disengagedGoto
+        whenReply moverobotfailed -> handlePostDevliveryFailure
 }
 
 /* -------------------------------------------------------------------------
