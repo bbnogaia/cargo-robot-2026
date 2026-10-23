@@ -32,7 +32,7 @@ class Mocksonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 		return { //this:ActionBasciFsm
 				state("s0") { //this:State
 					action { //it:State
-						CommUtils.outcyan("$name | init mocksonar")
+						CommUtils.outcyan("$name | Init mocksonar")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -43,7 +43,7 @@ class Mocksonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 				state("mockDetection") { //this:State
 					action { //it:State
 						delay(6000) 
-						CommUtils.outcyan("$name | rilevato container nell'area sensore! Invio containerArrived...")
+						CommUtils.outcyan("$name | Rilevato container nell'area sensore! Invio containerArrived...")
 						forward("containerArrived", "containerArrived(ok)" ,"cargoservice" ) 
 						delay(15000) 
 						//genTimer( actor, state )

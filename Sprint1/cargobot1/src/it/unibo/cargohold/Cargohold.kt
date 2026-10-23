@@ -35,7 +35,7 @@ class Cargohold ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 		return { //this:ActionBasciFsm
 				state("s0") { //this:State
 					action { //it:State
-						CommUtils.outcyan("$name | init e caricamento modello CargoHold tramite withobj")
+						CommUtils.outcyan("$name | Init e caricamento modello CargoHold")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -45,7 +45,7 @@ class Cargohold ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 				}	 
 				state("waitingRequests") { //this:State
 					action { //it:State
-						CommUtils.outcyan("$name | in attesa di richieste di gestione slot/posizioni...")
+						CommUtils.outcyan("$name | In attesa di richieste di gestione slot/posizioni...")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002

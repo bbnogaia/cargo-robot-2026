@@ -42,7 +42,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 		return { //this:ActionBasciFsm
 				state("initAskIOPort") { //this:State
 					action { //it:State
-						CommUtils.outgreen("$name | init cargoservice: richiedo posizioni fisse (ioport, slot5, home)...")
+						CommUtils.outgreen("$name | Init e richiesta IOPort...")
 						delay(1000) 
 						request("requestPosition", "requestPosition(ioport)" ,"cargohold" )  
 						//genTimer( actor, state )
@@ -50,8 +50,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tInit13",targetState="initAskSlot5",cond=whenReply("slotPosition"))
-					transition(edgeName="tInit14",targetState="initError",cond=whenReply("positionFailed"))
+					 transition(edgeName="ti13",targetState="initAskSlot5",cond=whenReply("slotPosition"))
+					transition(edgeName="ti14",targetState="initError",cond=whenReply("positionFailed"))
 				}	 
 				state("initAskSlot5") { //this:State
 					action { //it:State
@@ -68,8 +68,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tInit25",targetState="initAskHome",cond=whenReply("slotPosition"))
-					transition(edgeName="tInit26",targetState="initError",cond=whenReply("positionFailed"))
+					 transition(edgeName="ti25",targetState="initAskHome",cond=whenReply("slotPosition"))
+					transition(edgeName="ti26",targetState="initError",cond=whenReply("positionFailed"))
 				}	 
 				state("initAskHome") { //this:State
 					action { //it:State
@@ -86,8 +86,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tInit37",targetState="initComplete",cond=whenReply("slotPosition"))
-					transition(edgeName="tInit38",targetState="initError",cond=whenReply("positionFailed"))
+					 transition(edgeName="ti37",targetState="initComplete",cond=whenReply("slotPosition"))
+					transition(edgeName="ti38",targetState="initError",cond=whenReply("positionFailed"))
 				}	 
 				state("initComplete") { //this:State
 					action { //it:State
@@ -107,7 +107,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("initError") { //this:State
 					action { //it:State
-						CommUtils.outred("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio!")
+						CommUtils.outred("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio! Si consiglia di riavviare il sistema.")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -116,19 +116,19 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("disengaged") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | disengaged (in attesa di richieste)")
+						CommUtils.outmagenta("$name | Disengaged: in attesa di richieste...")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t09",targetState="handleLoad",cond=whenRequest("requestToLoad"))
+					 transition(edgeName="td19",targetState="handleLoad",cond=whenRequest("requestToLoad"))
 				}	 
 				state("handleLoad") { //this:State
 					action { //it:State
 						if( checkMsgContent( Term.createTerm("requestToLoad(NOARGS)"), Term.createTerm("requestToLoad(NOARGS)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList
-								CommUtils.outmagenta("$name | ricevuta richiesta requestToLoad")
+								CommUtils.outmagenta("$name | Ricevuta richiesta di carico: requestToLoad")
 								request("requestSlot", "requestSlot(NOARGS)" ,"cargohold" )  
 						}
 						//genTimer( actor, state )
@@ -136,12 +136,12 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t110",targetState="confirmLoadToClient",cond=whenReply("slotReserved"))
-					transition(edgeName="t111",targetState="handleLoadFailed",cond=whenReply("slotFailed"))
+					 transition(edgeName="tl110",targetState="confirmLoadToClient",cond=whenReply("slotReserved"))
+					transition(edgeName="tl111",targetState="handleLoadFailed",cond=whenReply("slotFailed"))
 				}	 
 				state("handleLoadFailed") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | Nessuno slot disponibile. Rispondo loadRejected.")
+						CommUtils.outmagenta("$name | Nessuno slot disponibile. Rispondo alla webgui...")
 						answer("requestToLoad", "loadRejected", "loadRejected(rejected)"   )  
 						//genTimer( actor, state )
 					}
@@ -155,7 +155,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 						if( checkMsgContent( Term.createTerm("slotReserved(ANSWER)"), Term.createTerm("slotReserved(ANSWER)"), 
 						                        currentMsg.msgContent()) ) { //set msgArgList
 								 AssignedSlotId = payloadArg(0)  
-								CommUtils.outmagenta("$name | Slot assegnato: $AssignedSlotId. Invio loadAccepted alla webgui.")
+								CommUtils.outmagenta("$name | Slot assegnato: $AssignedSlotId. Rispondo alla webgui...")
 								answer("requestToLoad", "loadAccepted", "loadAccepted($AssignedSlotId)"   )  
 						}
 						//genTimer( actor, state )
@@ -167,15 +167,15 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("askSlotPosition") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | Richiesta coordinate slot $AssignedSlotId...")
+						CommUtils.outmagenta("$name | Richiesta coordinate per $AssignedSlotId...")
 						request("requestPosition", "requestPosition($AssignedSlotId)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t212",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
-					transition(edgeName="t213",targetState="handlePositionFail",cond=whenReply("positionFailed"))
+					 transition(edgeName="tl212",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
+					transition(edgeName="tl213",targetState="handlePositionFail",cond=whenReply("positionFailed"))
 				}	 
 				state("saveSlotPosition") { //this:State
 					action { //it:State
@@ -195,7 +195,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("handlePositionFail") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | Slot inesistente...")
+						CommUtils.outmagenta("$name | ERRORE: Slot Inesistente...")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -205,7 +205,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("waitForContainer") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | In attesa del container nell'area sensore (max 30s)...")
+						CommUtils.outmagenta("$name | In attesa del container nell'area IOPort (max 30s)...")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -213,20 +213,20 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				 	 		stateTimer = TimerActor("timer_waitForContainer", 
 				 	 					  scope, context!!, "local_tout_"+name+"_waitForContainer", 30000.toLong() )  //OCT2023
 					}	 	 
-					 transition(edgeName="t614",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
-					transition(edgeName="t615",targetState="moveToIOPort",cond=whenDispatch("containerArrived"))
+					 transition(edgeName="tw114",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
+					transition(edgeName="tw115",targetState="moveToIOPort",cond=whenDispatch("containerArrived"))
 				}	 
 				state("handleTimeout") { //this:State
 					action { //it:State
-						CommUtils.outred("$name | TIMEOUT: container non posizionato entro 30 secondi! Ripristino slot libero...")
+						CommUtils.outred("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...")
 						request("setSlot", "setSlot($AssignedSlotId,free)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t716",targetState="disengaged",cond=whenReply("setSlotChanged"))
-					transition(edgeName="t717",targetState="disengaged",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="tw216",targetState="disengaged",cond=whenReply("setSlotChanged"))
+					transition(edgeName="tw217",targetState="disengaged",cond=whenReply("setSlotFailed"))
 				}	 
 				state("moveToIOPort") { //this:State
 					action { //it:State
@@ -237,8 +237,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t818",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
-					transition(edgeName="t819",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te118",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
+					transition(edgeName="te119",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("moveToSlot5") { //this:State
 					action { //it:State
@@ -250,12 +250,12 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t920",targetState="markContainer",cond=whenReply("moverobotdone"))
-					transition(edgeName="t921",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te220",targetState="markContainer",cond=whenReply("moverobotdone"))
+					transition(edgeName="te221",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("markContainer") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | container allo slot5. Attesa marcatura barcode...")
+						CommUtils.outmagenta("$name | Container allo slot5. Marcatura barcode...")
 						delay(3000) 
 						//genTimer( actor, state )
 					}
@@ -266,43 +266,43 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("moveToFinalSlot") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | marcatura completata. Comando cargorobot verso lo slot finale: $AssignedSlotId ($TargetX, $TargetY)")
+						CommUtils.outmagenta("$name | Marcatura completata. Comando cargorobot verso lo slot finale: $AssignedSlotId ($TargetX, $TargetY)")
 						request("moverobot", "moverobot($TargetX,$TargetY,330)" ,"robotsmart" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t1022",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
-					transition(edgeName="t1023",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te322",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
+					transition(edgeName="te323",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finalizeStorage") { //this:State
 					action { //it:State
-						CommUtils.outgreen("$name | Container posizionato. Aggiornamento stato slot $AssignedSlotId ad OCCUPIED...")
+						CommUtils.outgreen("$name | Container posizionato. Aggiornamento stato $AssignedSlotId ad OCCUPIED...")
 						request("setSlot", "setSlot($AssignedSlotId,occupied)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t1124",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="t1125",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te424",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te425",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("returnToHome") { //this:State
 					action { //it:State
-						CommUtils.outmagenta("$name | Operazione completata. Comando di ritorno alla HOME ($HomeX, $HomeY)...")
+						CommUtils.outmagenta("$name | Comando di ritorno alla HOME ($HomeX, $HomeY)...")
 						request("moverobot", "moverobot($HomeX,$HomeY,330)" ,"robotsmart" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t1226",targetState="finishOperation",cond=whenReply("moverobotdone"))
-					transition(edgeName="t1227",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te526",targetState="finishOperation",cond=whenReply("moverobotdone"))
+					transition(edgeName="te527",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finishOperation") { //this:State
 					action { //it:State
-						CommUtils.outgreen("$name | Cargorobot rientrato alla HOME con successo. Sistema disengaged.")
+						CommUtils.outgreen("$name | Cargorobot rientrato alla HOME con successo.")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -312,27 +312,27 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				}	 
 				state("handlePreDeliveryFailure") { //this:State
 					action { //it:State
-						CommUtils.outred("$name | errore pre-delivery: movimento del cargorobot fallito!")
+						CommUtils.outred("$name | ERRORE pre-delivery: movimento del cargorobot fallito! Tentaivo di ritorno a HOME...")
 						request("setSlot", "setSlot($AssignedSlotId,free)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tPreError28",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="tPreError29",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te628",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te629",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("handlePostDevliveryFailure") { //this:State
 					action { //it:State
-						CommUtils.outred("$name | Errore post-delivery: movimento del cargorobot fallito! Tentativo di rientro HOME...")
+						CommUtils.outred("$name | ERRORE post-delivery: movimento del cargorobot fallito! Tentativo di ritorno a HOME...")
 						request("moverobot", "moverobot($HomeX,$HomeY,330)" ,"robotsmart" )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tPostHome30",targetState="disengaged",cond=whenReply("moverobotdone"))
-					transition(edgeName="tPostHome31",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te730",targetState="disengaged",cond=whenReply("moverobotdone"))
+					transition(edgeName="te731",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 			}
 		}

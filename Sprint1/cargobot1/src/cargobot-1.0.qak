@@ -4,7 +4,7 @@ System cargocompany1
  * MESSAGES -------------------------------------------------------------------------
  */
 
-// cargoservice <-> webgui
+// cargoservice <-> (mock) webgui
 Request requestToLoad : requestToLoad(NOARGS)
 Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
 Reply loadRejected : loadRejected(ANSWER) for requestToLoad
@@ -46,6 +46,7 @@ ExternalQActor robotsmart context ctxrobotsmart
  * CARGOHOLD 
  * -------------------------------------------------------------------------
  */
+ 
 QActor cargohold context ctxcargocompany{
     import "main.java.cargoHold.model.*"
 
@@ -54,19 +55,25 @@ QActor cargohold context ctxcargocompany{
 	#]
 		
     State s0 initial {
-        println("$name | init e caricamento modello CargoHold tramite withobj") color cyan
+        println("$name | Init e caricamento modello CargoHold") color cyan
     }
     Goto waitingRequests
 
     State waitingRequests {
-        println("$name | in attesa di richieste di gestione slot/posizioni...") color cyan
+        println("$name | In attesa di richieste di gestione slot/posizioni...") color cyan
     }
     Transition t0
         whenRequest requestSlot -> handleRequestSlot
         whenRequest setSlot -> handleSetSlot
         whenRequest requestPosition -> handleRequestPosition
 
-    // 1. Gestione richiesta slot libero
+	/**
+     *  STATE HANDLESTATE: ----------------------------------------------------------
+     *  Gestione richiesta slot libero.
+     *  Gestione aggiornamento stato slot (free, reserved, occupied).
+     *  Richiesta coordinate di uno slot, IOPort o HOME.
+     */
+	    
     State handleRequestSlot {
         onMsg( requestSlot : requestSlot(NOARGS) ) {
             [#
@@ -88,7 +95,7 @@ QActor cargohold context ctxcargocompany{
     }
     Goto waitingRequests
 
-    // 2. Gestione aggiornamento stato slot (free, reserved, occupied)
+   
     State handleSetSlot {
         onMsg( setSlot : setSlot(SLOTID, STATE) ) {
             [#
@@ -113,7 +120,7 @@ QActor cargohold context ctxcargocompany{
     }
     Goto waitingRequests
 
-    // 3. Richiesta coordinate di uno slot, IOPort o HOME
+    
     State handleRequestPosition {
         onMsg( requestPosition : requestPosition(LOCATION) ) {
             [#
@@ -156,10 +163,14 @@ QActor cargohold context ctxcargocompany{
     Goto waitingRequests
 }
 
+
+
+
 /* -------------------------------------------------------------------------
  * CARGOSERVICE
  * -------------------------------------------------------------------------
  */
+ 
 QActor cargoservice context ctxcargocompany {
 
     [#
@@ -176,15 +187,16 @@ QActor cargoservice context ctxcargocompany {
     
     /**
      *  STATE INIT: ----------------------------------------------------------
-     *  caricamento delle coordinate fisse: IOPort, Slot5, Home
+     *  Caricamento delle coordinate fisse: IOPort, Slot5, Home.
+     *  In caso di errore è necessario riavviare il sistema.
      */
      
     State initAskIOPort initial {
-        println("$name | init cargoservice: richiedo posizioni fisse (ioport, slot5, home)...") color green
+        println("$name | Init e richiesta IOPort...") color green
         delay 1000 // Piccolo delay per assicurarsi che cargohold sia pronto ad accettare richieste
         request cargohold -m requestPosition : requestPosition(ioport)
     }
-    Transition tInit1
+    Transition ti1
         whenReply slotPosition -> initAskSlot5
         whenReply positionFailed -> initError
 
@@ -198,7 +210,7 @@ QActor cargoservice context ctxcargocompany {
             request cargohold -m requestPosition : requestPosition(slot5)
         }
     }
-    Transition tInit2
+    Transition ti2
         whenReply slotPosition -> initAskHome
         whenReply positionFailed -> initError
 
@@ -212,7 +224,7 @@ QActor cargoservice context ctxcargocompany {
             request cargohold -m requestPosition : requestPosition(home)
         }
     }
-    Transition tInit3
+    Transition ti3
         whenReply slotPosition -> initComplete
         whenReply positionFailed -> initError
 
@@ -228,56 +240,57 @@ QActor cargoservice context ctxcargocompany {
     Goto disengaged
 
     State initError {
-        println("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio!") color red
+        println("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio! Si consiglia di riavviare il sistema.") color red
     }
 
      /**
      *  STATE DISENGAGED: ----------------------------------------------------------
-     *  il sistema rimane in attesa di richieste di carico
+     *  Il sistema rimane in attesa di richieste di carico.
      */
+     
     State disengaged {
-        println("$name | disengaged (in attesa di richieste)") color magenta
+        println("$name | Disengaged: in attesa di richieste...") color magenta
     }
-    Transition t0
+    Transition td1
         whenRequest requestToLoad -> handleLoad
         
     /**
      *  STATE LOAD: -------------------------------------------------------------------
-     *  il sistema riceve una richiesta di carico
-     *  e verifica la disponibilità degli slot
+     *  Il sistema riceve una richiesta di carico
+     *  e verifica la disponibilità degli slot.
+     *  Recupera le coordinate dello slot assegnato.
      */
+     
     State handleLoad {
         onMsg( requestToLoad : requestToLoad(NOARGS) ) {
-            println("$name | ricevuta richiesta requestToLoad") color magenta
+            println("$name | Ricevuta richiesta di carico: requestToLoad") color magenta
             request cargohold -m requestSlot : requestSlot(NOARGS)
         }
     }
-    Transition t1
+    Transition tl1
         whenReply slotReserved -> confirmLoadToClient
         whenReply slotFailed -> handleLoadFailed
 
     State handleLoadFailed {
-        println("$name | Nessuno slot disponibile. Rispondo loadRejected.") color magenta
+        println("$name | Nessuno slot disponibile. Rispondo alla webgui...") color magenta
         replyTo requestToLoad with loadRejected : loadRejected(rejected)
     }
     Goto disengaged
 
-    // 1. Accetta subito la richiesta verso la webgui
     State confirmLoadToClient {
         onMsg( slotReserved : slotReserved(ANSWER) ) {
             [# AssignedSlotId = payloadArg(0) #]
-            println("$name | Slot assegnato: $AssignedSlotId. Invio loadAccepted alla webgui.") color magenta
+            println("$name | Slot assegnato: $AssignedSlotId. Rispondo alla webgui...") color magenta
             replyTo requestToLoad with loadAccepted : loadAccepted($AssignedSlotId)
         }
     }
     Goto askSlotPosition
 
-    // 2. Richiede solo la posizione dello slot assegnato
     State askSlotPosition {
-        println("$name | Richiesta coordinate slot $AssignedSlotId...") color magenta
+        println("$name | Richiesta coordinate per $AssignedSlotId...") color magenta
         request cargohold -m requestPosition : requestPosition($AssignedSlotId)
     }
-    Transition t2
+    Transition tl2
         whenReply slotPosition -> saveSlotPosition
         whenReply positionFailed -> handlePositionFail
 
@@ -293,36 +306,34 @@ QActor cargoservice context ctxcargocompany {
     Goto waitForContainer
     
     State handlePositionFail {
-    	println("$name | Slot inesistente...") color magenta
+    	println("$name | ERRORE: Slot Inesistente...") color magenta
     }
     Goto disengaged
 
      /**
      *  STATE WAITCONTAINER: -------------------------------------------------------------------------------------
-     *  attesa del posizionamento del container
+     *  Attesa del posizionamento del container.
      */
      
     State waitForContainer {
-        println("$name | In attesa del container nell'area sensore (max 30s)...") color magenta
+        println("$name | In attesa del container nell'area IOPort (max 30s)...") color magenta
     }
-    Transition t6
+    Transition tw1
         whenTime 30000 -> handleTimeout // Timeout scaduto (30 secondi)
         whenMsg containerArrived -> moveToIOPort  
 
-    // --- GESTIONE TIMEOUT (30s passati senza container) ---
     State handleTimeout {
-        println("$name | TIMEOUT: container non posizionato entro 30 secondi! Ripristino slot libero...") color red
+        println("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...") color red
         request cargohold -m setSlot : setSlot($AssignedSlotId, free)
     }
-    Transition t7
+    Transition tw2
         whenReply setSlotChanged -> disengaged
         whenReply setSlotFailed -> disengaged
 
 
 	 /**
      *  STATE ENGAGED: ----------------------------------------------------------
-     *  il sistema riceve una richiesta di carico
-     *  e verifica la disponibilità degli slot
+     *  Operazioni di movimento del container.
      */
 
 
@@ -331,7 +342,7 @@ QActor cargoservice context ctxcargocompany {
         println("$name | Container rilevato! Comando cargorobot verso IOPort in coordinate ($IOPortX, $IOPortY)") color magenta
         request robotsmart -m moverobot : moverobot($IOPortX, $IOPortY, 330)
     }
-    Transition t8
+    Transition te1
         whenReply moverobotdone -> moveToSlot5
         whenReply moverobotfailed -> handlePreDeliveryFailure
 
@@ -341,81 +352,85 @@ QActor cargoservice context ctxcargocompany {
         println("$name | IOPort raggiunta. Comando cargorobot verso slot5 (marcatura) in coordinate ($Slot5X, $Slot5Y)") color magenta
         request robotsmart -m moverobot : moverobot($Slot5X, $Slot5Y, 330)
     }
-    Transition t9
+    Transition te2
         whenReply moverobotdone -> markContainer
         whenReply moverobotfailed -> handlePreDeliveryFailure
 
     // --- STEP 2: Attesa marcatura (simulata con delay o segnale marker) ---
     State markContainer {
-        println("$name | container allo slot5. Attesa marcatura barcode...") color magenta
+        println("$name | Container allo slot5. Marcatura barcode...") color magenta
         delay 3000 // Simulazione tempo di marcatura
     }
     Goto moveToFinalSlot
 
     // --- STEP 3: Muove il robot dallo slot5 allo slot finale riservato ---
     State moveToFinalSlot {
-        println("$name | marcatura completata. Comando cargorobot verso lo slot finale: $AssignedSlotId ($TargetX, $TargetY)") color magenta
+        println("$name | Marcatura completata. Comando cargorobot verso lo slot finale: $AssignedSlotId ($TargetX, $TargetY)") color magenta
         request robotsmart -m moverobot : moverobot( $TargetX, $TargetY, 330)
     }
-    Transition t10
+    Transition te3
         whenReply moverobotdone -> finalizeStorage
         whenReply moverobotfailed -> handlePreDeliveryFailure
 
     // --- STEP 4: Finalizzazione nello storage ---
     State finalizeStorage {
-        println("$name | Container posizionato. Aggiornamento stato slot $AssignedSlotId ad OCCUPIED...") color green
+        println("$name | Container posizionato. Aggiornamento stato $AssignedSlotId ad OCCUPIED...") color green
         request cargohold -m setSlot : setSlot($AssignedSlotId, occupied)
     }
-    Transition t11
+    Transition te4
         whenReply setSlotChanged -> returnToHome
         whenReply setSlotFailed -> returnToHome
 
     // --- STEP 5: Il robot ritorna alla HOME ---
     State returnToHome {
-        println("$name | Operazione completata. Comando di ritorno alla HOME ($HomeX, $HomeY)...") color magenta
+        println("$name | Comando di ritorno alla HOME ($HomeX, $HomeY)...") color magenta
         request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
     }
-    Transition t12
+    Transition te5
         whenReply moverobotdone -> finishOperation
         whenReply moverobotfailed -> handlePostDevliveryFailure
 
     State finishOperation {
-        println("$name | Cargorobot rientrato alla HOME con successo. Sistema disengaged.") color green
+        println("$name | Cargorobot rientrato alla HOME con successo.") color green
     }
     Goto disengaged
 
-    // --- STATE: GESTIONE ERRORI ROBOT ---
     State handlePreDeliveryFailure {
-        println("$name | errore pre-delivery: movimento del cargorobot fallito!") color red
+        println("$name | ERRORE pre-delivery: movimento del cargorobot fallito! Tentaivo di ritorno a HOME...") color red
         request cargohold -m setSlot : setSlot($AssignedSlotId, free)
     }
-    Transition tPreError
+    Transition te6
         whenReply setSlotChanged -> returnToHome
         whenReply setSlotFailed -> returnToHome
 
     State handlePostDevliveryFailure {
-        println("$name | Errore post-delivery: movimento del cargorobot fallito! Tentativo di rientro HOME...") color red
+        println("$name | ERRORE post-delivery: movimento del cargorobot fallito! Tentativo di ritorno a HOME...") color red
         request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
     }
-    Transition tPostHome
+    Transition te7
         whenReply moverobotdone -> disengaged
         whenReply moverobotfailed -> handlePostDevliveryFailure
 }
+
+
+
+
 
 /* -------------------------------------------------------------------------
  * MOCK SONAR
  * -------------------------------------------------------------------------
  */
+ 
 QActor mocksonar context ctxcargocompany {
     State s0 initial {
-        println("$name | init mocksonar") color cyan
+        println("$name | Init mocksonar") color cyan
     }
     Goto mockDetection
 
     State mockDetection {
         // Attende qualche secondo prima di simulare il posizionamento
         delay 6000
-        println("$name | rilevato container nell'area sensore! Invio containerArrived...") color cyan
+        println("$name | Rilevato container nell'area sensore! Invio containerArrived...") color cyan
         forward cargoservice -m containerArrived : containerArrived(ok)
 
         delay 15000
@@ -424,14 +439,16 @@ QActor mocksonar context ctxcargocompany {
 }
 
 
+
 /* -------------------------------------------------------------------------
  * MOCK WEB-GUI
  * -------------------------------------------------------------------------
  */
+ 
 QActor mockwebgui context ctxcargocompany {
     
     State s0 initial {
-        println("$name | init ") color yellow   
+        println("$name | Init ") color yellow   
     }
     Goto mockReq
     

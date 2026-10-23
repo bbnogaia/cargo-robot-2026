@@ -32,7 +32,7 @@ class Mockwebgui ( name: String, scope: CoroutineScope, isconfined: Boolean=fals
 		return { //this:ActionBasciFsm
 				state("s0") { //this:State
 					action { //it:State
-						CommUtils.outyellow("$name | init ")
+						CommUtils.outyellow("$name | Init ")
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
