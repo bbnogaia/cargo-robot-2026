@@ -17,7 +17,9 @@ reply( positionFailed, positionFailed(REASON) ).  %%for requestPosition
 request( moverobot, moverobot(TARGETX,TARGETY,STEPTIME) ).
 reply( moverobotdone, moverobotdone(ARG) ).  %%for moverobot
 reply( moverobotfailed, moverobotfailed(PLANDONE,PLANTODO) ).  %%for moverobot
-dispatch( containerArrived, containerArrived(ARG) ).
+dispatch( containerArrived, containerArrived(NOARGS) ).
+dispatch( outOfService, outOfService(NOARGS) ).
+dispatch( ledState, ledState(STATE) ).
 %====================================================================================
 context(ctxcargocompany, "localhost",  "TCP", "8040").
 context(ctxrobotsmart, "127.0.0.1",  "TCP", "8020").
@@ -28,5 +30,7 @@ context(ctxrobotsmart, "127.0.0.1",  "TCP", "8020").
  static(cargoservice).
   qactor( mocksonar, ctxcargocompany, "it.unibo.mocksonar.Mocksonar").
  static(mocksonar).
+  qactor( mockled, ctxcargocompany, "it.unibo.mockled.Mockled").
+ static(mockled).
   qactor( mockwebgui, ctxcargocompany, "it.unibo.mockwebgui.Mockwebgui").
  static(mockwebgui).

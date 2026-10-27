@@ -117,6 +117,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				state("disengaged") { //this:State
 					action { //it:State
 						CommUtils.outmagenta("$name | Disengaged: in attesa di richieste...")
+						forward("ledState", "ledState(off)" ,"mockled" ) 
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -158,6 +159,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 								CommUtils.outmagenta("$name | Slot assegnato: $AssignedSlotId. Rispondo alla webgui...")
 								answer("requestToLoad", "loadAccepted", "loadAccepted($AssignedSlotId)"   )  
 						}
+						forward("ledState", "ledState(on)" ,"mockled" ) 
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -215,6 +217,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					}	 	 
 					 transition(edgeName="tw114",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
 					transition(edgeName="tw115",targetState="moveToIOPort",cond=whenDispatch("containerArrived"))
+					transition(edgeName="tw116",targetState="disengaged",cond=whenDispatch("outOfService"))
 				}	 
 				state("handleTimeout") { //this:State
 					action { //it:State
@@ -225,8 +228,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tw216",targetState="disengaged",cond=whenReply("setSlotChanged"))
-					transition(edgeName="tw217",targetState="disengaged",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="tw217",targetState="disengaged",cond=whenReply("setSlotChanged"))
+					transition(edgeName="tw218",targetState="disengaged",cond=whenReply("setSlotFailed"))
 				}	 
 				state("moveToIOPort") { //this:State
 					action { //it:State
@@ -237,8 +240,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te118",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
-					transition(edgeName="te119",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te119",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
+					transition(edgeName="te120",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("moveToSlot5") { //this:State
 					action { //it:State
@@ -250,8 +253,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te220",targetState="markContainer",cond=whenReply("moverobotdone"))
-					transition(edgeName="te221",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te221",targetState="markContainer",cond=whenReply("moverobotdone"))
+					transition(edgeName="te222",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("markContainer") { //this:State
 					action { //it:State
@@ -273,8 +276,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te322",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
-					transition(edgeName="te323",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te323",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
+					transition(edgeName="te324",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finalizeStorage") { //this:State
 					action { //it:State
@@ -285,8 +288,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te424",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="te425",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te425",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te426",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("returnToHome") { //this:State
 					action { //it:State
@@ -297,8 +300,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te526",targetState="finishOperation",cond=whenReply("moverobotdone"))
-					transition(edgeName="te527",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te527",targetState="finishOperation",cond=whenReply("moverobotdone"))
+					transition(edgeName="te528",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finishOperation") { //this:State
 					action { //it:State
@@ -320,8 +323,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te628",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="te629",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te629",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te630",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("handlePostDevliveryFailure") { //this:State
 					action { //it:State
@@ -333,8 +336,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te730",targetState="disengaged",cond=whenReply("moverobotdone"))
-					transition(edgeName="te731",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te731",targetState="disengaged",cond=whenReply("moverobotdone"))
+					transition(edgeName="te732",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 			}
 		}

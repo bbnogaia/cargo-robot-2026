@@ -49,9 +49,9 @@ class Mockwebgui ( name: String, scope: CoroutineScope, isconfined: Boolean=fals
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t032",targetState="handleAccepted",cond=whenReply("loadAccepted"))
-					transition(edgeName="t033",targetState="handleRejected",cond=whenReply("loadRejected"))
-					transition(edgeName="t034",targetState="handleRetry",cond=whenReply("loadRetryLater"))
+					 transition(edgeName="t034",targetState="handleAccepted",cond=whenReply("loadAccepted"))
+					transition(edgeName="t035",targetState="handleRejected",cond=whenReply("loadRejected"))
+					transition(edgeName="t036",targetState="handleRetry",cond=whenReply("loadRetryLater"))
 				}	 
 				state("handleAccepted") { //this:State
 					action { //it:State

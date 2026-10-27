@@ -29,6 +29,7 @@ with Diagram('cargocompany1Arch', show=False, outformat='png', graph_attr=grapha
           cargohold=Custom('cargohold','./qakicons/symActorWithobjSmall.png')
           cargoservice=Custom('cargoservice','./qakicons/symActorWithobjSmall.png')
           mocksonar=Custom('mocksonar','./qakicons/symActorWithobjSmall.png')
+          mockled=Custom('mockled','./qakicons/symActorWithobjSmall.png')
           mockwebgui=Custom('mockwebgui','./qakicons/symActorWithobjSmall.png')
      with Cluster('ctxrobotsmart', graph_attr=nodeattr):
           robotsmart=Custom('robotsmart(ext)','./qakicons/externalQActor.png')
@@ -36,4 +37,5 @@ with Diagram('cargocompany1Arch', show=False, outformat='png', graph_attr=grapha
      cargoservice >> Edge(color='magenta', style='solid', decorate='true', label='<moverobot<font color="darkgreen"> moverobotdone moverobotfailed</font> &nbsp; >',  fontcolor='magenta') >> robotsmart
      mockwebgui >> Edge(color='magenta', style='solid', decorate='true', label='<requestToLoad<font color="darkgreen"> loadAccepted loadRejected loadRetryLater</font> &nbsp; >',  fontcolor='magenta') >> cargoservice
      mocksonar >> Edge(color='blue', style='solid',  decorate='true', label='<containerArrived &nbsp; >',  fontcolor='blue') >> cargoservice
+     cargoservice >> Edge(color='blue', style='solid',  decorate='true', label='<ledState &nbsp; >',  fontcolor='blue') >> mockled
 diag

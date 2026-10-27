@@ -150,6 +150,18 @@ QActor cargoservice context ctxcargocompany
 </pre>
 
 <pre>
+<b>Relazione con il PicoW:</b>
+
+• Poiché la gestione della logica di business è interamente affidata a cargoservice, il sensore assume un ruolo puramente strumentale, 
+  limitandosi a trasmettere le misurazioni rilevate mediante un messaggio di tipo event. 
+  Questa scelta architetturale garantisce un forte disaccoppiamento: di conseguenza, cargoservice non necessita 
+  di conoscere l'indirizzo IP e la porta del PicoW, e viceversa. 
+
+• Il LED collegato al Pico deve rispecchiare lo stato del sistema, accendendosi durante la fase di engaged e spegnendosi in quella di disengaged. 
+  A tale scopo, cargoservice comunica con il PicoW servendosi di un messaggio dispatch.
+</pre>
+
+<pre>
 <b>Dettaglio messaggi:</b>
 
 • <span style="color:red;"><b>cargohold</b></span> comunica tramite la seguente sintassi:
@@ -179,7 +191,7 @@ QActor cargoservice context ctxcargocompany
   - <b>setSlotFailed</b>: motivazione
   - <b>positionFailed</b>: motivazione
 
-• <span style="color:red;"><b>cargoservice</b></span> accetta richieste di carico tramite la seguente sintassi:
+• <span style="color:red;"><b>cargoservice</b></span> comunica tramite la seguente sintassi:
 
   •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; webgui</b></span>
   <code>
@@ -192,6 +204,19 @@ QActor cargoservice context ctxcargocompany
   - <b>loadAccepted</b>: slotId riservato
   - <b>loadRejected</b>: "rejected"
   - <b>loadRetryLater</b>: "retrylater"
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; sonar</b></span>
+  <code>
+    Dispatch containerArrived : containerArrived(NOARGS)
+    Dispatch outOfService : outOfService(NOARGS)
+  </code>
+
+•  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; led</b></span>
+  <code>
+    Dispatch ledState  : ledState(STATE)
+  </code>
+  Messaggi attesi:
+  - <b>ledState</b>: "on", "off"
 
 • <span style="color:red;"><b>cargoservice</b></span> coordina i movimenti del <span style="color:red;"><b>cargorobot</b></span> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
 Si evidenziano i più rilevanti:
@@ -262,6 +287,8 @@ Si evidenziano i più rilevanti:
 
 <h2>Project</h2> 
 <pre>
+<b>cargoHold-1.0.jar</b>
+
 • Sulla base delle interfacce individuate nello Sprint0, in relazione ai componenti non-attivi,
   viene prodotta una libreria contente l'insieme delle classi POJO: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/tree/main/Sprint1/cargoHold-1.0'>cargoHold-1.0.jar</a></b>. 
 
@@ -272,15 +299,57 @@ Si evidenziano i più rilevanti:
 • Il servizio <b>cargohold</b> usa <b>cargoHold-1.0.jar</b>.
   Attualmente non si ritiene necessario il salvataggio dello stato del sistema su un file esterno.
   Lo stato verrà mantenuto finchè il servizio rimarrà attivo sul nodo.
-
-• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Qak eseguibile</a></b> del sistema.
-
 </pre>
 
 <pre>
-<b>Stati del sistema cargoservice:</b>
+<b>Stati del servizio cargohold:</b>
+<img src="../cargobot1/cargobot-1.0_schemi/cargohold.svg" alt="alessandro" width="80%" height="80%">
 
-<b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Position</a></b>
+• <b>MARCO-STATO: WAITREQ</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">waitingRequest</td>
+      <td style="padding: 8px;">In attesa di richieste per la gestione della stiva.</td>
+    </tr>
+</table>
+
+• <b>MARCO-STATO: HANDLESTATE</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">handleRequestSlot</td>
+      <td style="padding: 8px;">Verifica la presenza di uno slot libero.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handleSetSlot</td>
+      <td style="padding: 8px;">Cambia lo stato di uno slot.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handleRequestPosition</td>
+      <td style="padding: 8px;">Ritorna la posizione di un elemento del sistema.</td>
+    </tr>
+</table>
+</pre>
+
+
+
+<pre>
+<b>Stati del servizio cargoservice:</b>
+
+<img src="../cargobot1/cargobot-1.0_schemi/cargoservice.svg" alt="alessandro" width="100%" height="100%">
 
 • <b>MARCO-STATO: INIT</b>
 <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
@@ -425,6 +494,12 @@ Si evidenziano i più rilevanti:
     </tr>
 </table>
 
+</pre>
+
+<pre>
+<b>Modello:</b>
+
+• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Qak eseguibile</a></b> del sistema.
 </pre>
 
 <h2>Testing</h2> 

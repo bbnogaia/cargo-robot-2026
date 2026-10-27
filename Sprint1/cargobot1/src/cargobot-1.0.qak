@@ -28,9 +28,12 @@ Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
 Reply moverobotdone : moverobotdone(ARG) for moverobot 
 Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
 
-// (mock) sensor
-Dispatch containerArrived : containerArrived(ARG)
+// cargoservice <-> (mock) sensor
+Dispatch containerArrived : containerArrived(NOARGS)
+Dispatch outOfService : outOfService(NOARGS)
 
+// cargoservice <-> (mock) led
+Dispatch ledState  : ledState(STATE)
 
 /* -------------------------------------------------------------------------
  * CONTEXTS
@@ -257,6 +260,8 @@ QActor cargoservice context ctxcargocompany {
      
     State disengaged {
         println("$name | Disengaged: in attesa di richieste...") color magenta
+        //blink led
+        forward mockled -m ledState : ledState(off)
     }
     Transition td1
         whenRequest requestToLoad -> handleLoad
@@ -290,6 +295,8 @@ QActor cargoservice context ctxcargocompany {
             println("$name | Slot assegnato: $AssignedSlotId. Rispondo alla webgui...") color magenta
             replyTo requestToLoad with loadAccepted : loadAccepted($AssignedSlotId)
         }
+        //blink led
+        forward mockled -m ledState : ledState(on)
     }
     Goto askSlotPosition
 
@@ -327,7 +334,8 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition tw1
         whenTime 30000 -> handleTimeout // Timeout scaduto (30 secondi)
-        whenMsg containerArrived -> moveToIOPort  
+        whenMsg containerArrived -> moveToIOPort
+        whenMsg outOfService -> disengaged  
 
     State handleTimeout {
         println("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...") color red
@@ -447,6 +455,29 @@ QActor mocksonar context ctxcargocompany {
     Goto mockDetection
 }
 
+/* -------------------------------------------------------------------------
+* MOCK LED
+* -------------------------------------------------------------------------
+*/
+QActor mockled context ctxcargocompany {
+    State s0 initial {
+        println("$name | Init led") color blue
+    }
+    Goto waitingLedState
+
+    State waitingLedState {
+    }
+    Transition t0
+        whenMsg ledState -> handleLedState
+
+    State handleLedState {
+        onMsg( ledState : ledState(STATE) ) {
+            [# val st = payloadArg(0) #]
+            println("$name | Stato led: $st ") color blue
+        }
+    }
+    Goto waitingLedState
+ }
 
 
 /* -------------------------------------------------------------------------
