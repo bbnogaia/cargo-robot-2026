@@ -313,6 +313,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				state("handlePreDeliveryFailure") { //this:State
 					action { //it:State
 						CommUtils.outred("$name | ERRORE pre-delivery: movimento del cargorobot fallito! Tentaivo di ritorno a HOME...")
+						CommUtils.outred("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema")
 						request("setSlot", "setSlot($AssignedSlotId,free)" ,"cargohold" )  
 						//genTimer( actor, state )
 					}
@@ -325,6 +326,7 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				state("handlePostDevliveryFailure") { //this:State
 					action { //it:State
 						CommUtils.outred("$name | ERRORE post-delivery: movimento del cargorobot fallito! Tentativo di ritorno a HOME...")
+						CommUtils.outred("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema")
 						request("moverobot", "moverobot($HomeX,$HomeY,330)" ,"robotsmart" )  
 						//genTimer( actor, state )
 					}

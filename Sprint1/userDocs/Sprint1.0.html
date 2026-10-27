@@ -208,11 +208,79 @@ Si evidenziano i più rilevanti:
   depositati i messaggi a loro inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
 </pre>
 
+
+
+<h2>Test plans</h2> 
+<pre>
+• Vengono definiti test che permettono di esplicitare il comportamento atteso di <b>cargoservice</b> in relazione ai messaggi. 
+  Di seguito vengono presentati degli esempi esemplificativi:
+
+<code>
+    @Test
+    public void testRequestToLoadAccepted() throws Exception {
+        String req = CommUtils.buildRequest(
+                "mock",
+                "requestToLoad",
+                "requestToLoad(NOARGS)",
+                "cargoservice"
+        ).toString();
+
+        System.out.println("Richiesta: " + req);
+
+        String response = conn.request(req);
+
+        System.out.println("Risposta: " + response);
+
+        assertTrue("La risposta deve contenere slot",
+                response.contains("slot"));
+        assertFalse("La richiesta non dovrebbe essere rifiutata",
+                response.contains("rejected"));
+    }
+
+    @Test
+    public void testRequestToLoadRejected() throws Exception {
+        String req = CommUtils.buildRequest(
+                "mock",
+                "requestToLoad",
+                "requestToLoad(NOARGS)",
+                "cargoservice"
+        ).toString();
+
+        System.out.println("Richiesta: " + req);
+
+        String response = conn.request(req);
+
+        System.out.println("Risposta: " + response);
+
+        assertTrue("La risposta deve essere rifiutata",
+                response.contains("rejected"));
+        assertFalse("La richiesta non dovrebbe specificare uno slot",
+                response.contains("slot"));
+    }
+</code>  
+</pre>
+
+<h2>Project</h2> 
+<pre>
+• Sulla base delle interfacce individuate nello Sprint0, in relazione ai componenti non-attivi,
+  viene prodotta una libreria contente l'insieme delle classi POJO: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/tree/main/Sprint1/cargoHold-1.0'>cargoHold-1.0.jar</a></b>. 
+
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Position</a></b>
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Slot</a></b>
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Hold</a></b>
+
+• Il servizio <b>cargohold</b> usa <b>cargoHold-1.0.jar</b>.
+  Attualmente non si ritiene necessario il salvataggio dello stato del sistema su un file esterno.
+  Lo stato verrà mantenuto finchè il servizio rimarrà attivo sul nodo.
+
+• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Qak eseguibile</a></b> del sistema.
+
+</pre>
+
 <pre>
 <b>Stati del sistema cargoservice:</b>
 
-L'analisi comportamentale di cargoservice porta attualmente ai seguenti stati:
-<img src="./img/statiCargo.png" alt="emiglio" width="100%" height="100%">
+<b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Position</a></b>
 
 • <b>MARCO-STATO: INIT</b>
 <table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
@@ -356,73 +424,6 @@ L'analisi comportamentale di cargoservice porta attualmente ai seguenti stati:
       <td style="padding: 8px;">Gestisce errori di movimento legati ad alcuni stati (come da immagine).</td>
     </tr>
 </table>
-
-</pre>
-
-<h2>Test plans</h2> 
-<pre>
-• Vengono definiti test che permettono di esplicitare il comportamento atteso di <b>cargoservice</b> in relazione ai messaggi. 
-  Di seguito vengono presentati degli esempi esemplificativi:
-
-<code>
-    @Test
-    public void testRequestToLoadAccepted() throws Exception {
-        String req = CommUtils.buildRequest(
-                "mock",
-                "requestToLoad",
-                "requestToLoad(NOARGS)",
-                "cargoservice"
-        ).toString();
-
-        System.out.println("Richiesta: " + req);
-
-        String response = conn.request(req);
-
-        System.out.println("Risposta: " + response);
-
-        assertTrue("La risposta deve contenere slot",
-                response.contains("slot"));
-        assertFalse("La richiesta non dovrebbe essere rifiutata",
-                response.contains("rejected"));
-    }
-
-    @Test
-    public void testRequestToLoadRejected() throws Exception {
-        String req = CommUtils.buildRequest(
-                "mock",
-                "requestToLoad",
-                "requestToLoad(NOARGS)",
-                "cargoservice"
-        ).toString();
-
-        System.out.println("Richiesta: " + req);
-
-        String response = conn.request(req);
-
-        System.out.println("Risposta: " + response);
-
-        assertTrue("La risposta deve essere rifiutata",
-                response.contains("rejected"));
-        assertFalse("La richiesta non dovrebbe specificare uno slot",
-                response.contains("slot"));
-    }
-</code>  
-</pre>
-
-<h2>Project</h2> 
-<pre>
-• Sulla base delle interfacce individuate nello Sprint0, in relazione ai componenti non-attivi,
-  viene prodotta una libreria contente l'insieme delle classi POJO: <b><a href='https://github.com/bbnogaia/cargo-robot-2026/tree/main/Sprint1/cargoHold-1.0'>cargoHold-1.0.jar</a></b>. 
-
-  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Position.java'>Position</a></b>
-  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Slot.java'>Slot</a></b>
-  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargoHold-1.0/src/main/java/cargoHold/model/Hold.java'>Hold</a></b>
-
-• Il servizio <b>cargohold</b> usa <b>cargoHold-1.0.jar</b>.
-  Attualmente non si ritiene necessario il salvataggio dello stato del sistema su un file esterno.
-  Lo stato verrà mantenuto finchè il servizio rimarrà attivo sul nodo.
-
-• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint1/cargobot1/src/cargobot-1.0.qak'>Qak eseguibile</a></b> del sistema.
 
 </pre>
 

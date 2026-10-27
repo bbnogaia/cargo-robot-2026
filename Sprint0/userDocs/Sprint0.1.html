@@ -318,11 +318,11 @@ public interface ISlot {
   - Rappresenta il componente hardware sonar del PicoW.
 
 • <span style="color:red;"><b><i>led</i></b></span> 
-  - Rappresenta il componente hardware led PicoW.
+  - Rappresenta il componente hardware led del PicoW.
 </pre>
  
 <pre>
-<b>Modello e Nodi Computazionali:</b>
+<b>Nodi Computazionali:</b>
 
 Il sistema viene concepito come un sistema distribuito, in cui i processi e le entità software sono ripartiti tra più nodi computazionali. 
 In particolare, si individuano almeno due nodi distinti: uno dedicato all'esecuzione dei servizi software 
@@ -345,6 +345,99 @@ Individuiamo i seguenti <span style="color:rgb(8, 176, 210);"><b>nodi</b></span>
 Scegliamo di descrivere il sistema tramite modello <b>Qak</b> (prodotto tramite linguaggio/metamodello Qak) per semplificare il ciclo di vita del sistema da sviluppare.
 Questo DSL ci consente di formalizzare il concetto di messaggio e di attore come servizio come segue: <b><a href='https://anatali.github.io/issLab2026/_static/docs/Protobook.pdf'>Documentazione relativa a Qak</a></b>. 
 Inoltre, ci permette di colmare l'abstraction gap tra la visione del dominio e i componenti software concreti, garantendo uno sviluppo rapido e coerente.
+
+</pre>
+
+<pre>
+<b>Modello:</b>
+
+• Il carattere distribuito del sistema implica che <b>cargoservice</b>, <b>webgui</b>, <b>sonar</b> e <b>led</b> (aggregato nel sonar) operino su macchine differenti; 
+  di conseguenza, assumono la natura di servizi e comunicano mediante lo scambio di messaggi.
+
+<code>
+System cargocompany
+
+/*
+ * MESSAGES -------------------------------------------------------------------------
+ */
+
+// cargoservice <-> (mock) webgui
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
+Reply loadRejected : loadRejected(ANSWER) for requestToLoad
+Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
+
+/* -------------------------------------------------------------------------
+ * CONTEXTS
+ * -------------------------------------------------------------------------
+ */
+Context ctxcargocompany ip [ host="localhost" port=8040] 
+
+
+/* -------------------------------------------------------------------------
+ * CARGOSERVICE
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor cargoservice context ctxcargocompany {
+
+     
+    State s0 initial {
+        println("$name | Init") color green
+     
+    }
+   
+}
+
+/* -------------------------------------------------------------------------
+ * SONAR
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor sonar context ctxcargocompany {
+
+    State s0 initial {
+        println("$name | Init ") color cyan
+    }
+
+}
+
+
+
+/* -------------------------------------------------------------------------
+ * WEB-GUI
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor webgui context ctxcargocompany {
+    
+    State s0 initial {
+        println("$name | Init ") color yellow   
+    }
+    
+}
+</code>
+
+• Poiché dai requisiti iniziali non è possibile determinare con precisione se <b>cargorobot</b> debba essere trattato come un servizio o come un semplice POJO, 
+  l'analisi approfondita della natura di questo componente è affidata nel corso dello Sprint1.
+
+</pre>
+
+<pre>
+<b>Dettaglio messaggi:</b>
+• <span style="color:red;"><b>cargoservice</b></span> accetta richieste di carico tramite la seguente sintassi:
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; webgui</b></span>
+  <code>
+    Request requestToLoad : requestToLoad(NOARGS)
+    Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
+    Reply loadRejected : loadRejected(ANSWER) for requestToLoad
+    Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
+  </code>
+  Risposte attese:
+  - <b>loadAccepted</b>: slotId riservato
+  - <b>loadRejected</b>: "rejected"
+  - <b>loadRetryLater</b>: "retrylater"
 
 </pre>
 

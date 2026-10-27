@@ -1,0 +1,61 @@
+System cargocompany0
+
+/*
+ * MESSAGES -------------------------------------------------------------------------
+ */
+
+// cargoservice <-> (mock) webgui
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
+Reply loadRejected : loadRejected(ANSWER) for requestToLoad
+Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
+
+/* -------------------------------------------------------------------------
+ * CONTEXTS
+ * -------------------------------------------------------------------------
+ */
+Context ctxcargocompany ip [ host="localhost" port=8040] 
+
+
+/* -------------------------------------------------------------------------
+ * CARGOSERVICE
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor cargoservice context ctxcargocompany {
+
+     
+    State s0 initial {
+        println("$name | Init") color green
+     
+    }
+   
+}
+
+/* -------------------------------------------------------------------------
+ * SONAR
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor sonar context ctxcargocompany {
+
+    State s0 initial {
+        println("$name | Init ") color cyan
+    }
+
+}
+
+
+
+/* -------------------------------------------------------------------------
+ * WEB-GUI
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor webgui context ctxcargocompany {
+    
+    State s0 initial {
+        println("$name | Init ") color yellow   
+    }
+    
+}

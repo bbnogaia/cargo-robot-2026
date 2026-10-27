@@ -59,6 +59,13 @@ QActor cargohold context ctxcargocompany{
     }
     Goto waitingRequests
 
+	/**
+     *  STATE WAITREQ: ----------------------------------------------------------
+     *  Gestione richiesta slot libero.
+     *  Gestione aggiornamento stato slot (free, reserved, occupied).
+     *  Richiesta coordinate di uno slot, IOPort o HOME.
+     */
+
     State waitingRequests {
         println("$name | In attesa di richieste di gestione slot/posizioni...") color cyan
     }
@@ -397,6 +404,7 @@ QActor cargoservice context ctxcargocompany {
 
     State handlePreDeliveryFailure {
         println("$name | ERRORE pre-delivery: movimento del cargorobot fallito! Tentaivo di ritorno a HOME...") color red
+        println("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema") color red
         request cargohold -m setSlot : setSlot($AssignedSlotId, free)
     }
     Transition te6
@@ -405,6 +413,7 @@ QActor cargoservice context ctxcargocompany {
 
     State handlePostDevliveryFailure {
         println("$name | ERRORE post-delivery: movimento del cargorobot fallito! Tentativo di ritorno a HOME...") color red
+        println("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema") color red
         request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
     }
     Transition te7
