@@ -53,6 +53,15 @@ class Mocksonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 					}	 	 
 					 transition( edgeName="goto",targetState="mockDetection", cond=doswitch() )
 				}	 
+				state("mockOFS") { //this:State
+					action { //it:State
+						forward("outOfService", "outOfService(ofs)" ,"cargoservice" ) 
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+				}	 
 			}
 		}
 } 

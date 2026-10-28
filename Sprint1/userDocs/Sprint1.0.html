@@ -150,15 +150,25 @@ QActor cargoservice context ctxcargocompany
 </pre>
 
 <pre>
-<b>Relazione con il PicoW:</b>
+<b>Relazione con il PicoW (sonar - led):</b>
 
-• Poiché la gestione della logica di business è interamente affidata a cargoservice, il sensore assume un ruolo puramente strumentale, 
-  limitandosi a trasmettere le misurazioni rilevate mediante un messaggio di tipo event. 
-  Questa scelta architetturale garantisce un forte disaccoppiamento: di conseguenza, cargoservice non necessita 
-  di conoscere l'indirizzo IP e la porta del PicoW, e viceversa. 
+• La logica applicativa relativa alle misurazioni del sonar, definita dai requisiti, è interamente delegata al QActor dedicato, denominato <b>sonar</b>. 
+  Questo si occupa di elaborare le misurazioni e di fornire agli attori interessati del sistema esclusivamente le informazioni 
+  essenziali per il suo corretto funzionamento. Si evidenzia, in questo modo, una netta separazione dei compiti e una chiara distribuzione 
+  delle responsabilità tra i diversi componenti del sistema.
 
-• Il LED collegato al Pico deve rispecchiare lo stato del sistema, accendendosi durante la fase di engaged e spegnendosi in quella di disengaged. 
-  A tale scopo, cargoservice comunica con il PicoW servendosi di un messaggio dispatch.
+• Dai requisiti emerge inoltre che un entità dovrà interagire con la <b>webgui</b> per segnalare lo stato operativo del dispositivo hardware, 
+  indicando se si trova in condizione di Out Of Service oppure Service Working. Questo rappresenta un'ulteriore motivazione a favore della scelta 
+  di delegare la logica relativa alle misurazioni al servizio <b>sonar</b>, centralizzando in un unico componente le responsabilità legate alla gestione del dispositivo.
+
+  <img src="../cargobot1/cargobot-1.0_schemi/sonar.png" alt="alessandro" width="60%" height="60%">
+
+• Si individuano le informazioni di interesse di <b>cargoservice</b>:
+  - Posizionamento di un container nello zona di carico
+  - Il sonar è Out Of Service
+
+• Il <b>led</b> collegato al PicoW deve rispecchiare lo stato del sistema, accendendosi durante la fase di engaged e spegnendosi in quella di disengaged. 
+  A tale scopo, cargoservice comunica con il relativo attore responsabile servendosi di un messaggio dispatch.
 </pre>
 
 <pre>
@@ -233,6 +243,11 @@ Si evidenziano i più rilevanti:
   depositati i messaggi a loro inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
 </pre>
 
+<pre>
+<b>Modello:</b>
+
+<img src="../cargobot1/cargobot-1.0_schemi/cargosystemArch.png" alt="alessandro" width="70%" height="70%">
+</pre>
 
 
 <h2>Test plans</h2> 

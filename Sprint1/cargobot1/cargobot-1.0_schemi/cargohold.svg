@@ -36,7 +36,7 @@
 <!-- waitingRequests -->
 <g id="node2" class="node">
 <title>waitingRequests</title>
-<polygon fill="#f4eacd" stroke="#a68b3f" points="364.39,-255.76 235.61,-255.76 235.61,-214.24 364.39,-214.24 364.39,-255.76"/>
+<polygon fill="#f4cddb" stroke="#a63f66" points="364.39,-255.76 235.61,-255.76 235.61,-214.24 364.39,-214.24 364.39,-255.76"/>
 <text xml:space="preserve" text-anchor="start" x="261.38" y="-241.5" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">waitingRequests</text>
 <text xml:space="preserve" text-anchor="start" x="250.5" y="-231.5" font-family="Helvetica,sans-Serif" font-size="10.00">In attesa di richieste di</text>
 <text xml:space="preserve" text-anchor="start" x="247.12" y="-221.5" font-family="Helvetica,sans-Serif" font-size="10.00">gestione slot/posizioni...</text>
@@ -50,7 +50,7 @@
 <!-- handleRequestSlot -->
 <g id="node3" class="node">
 <title>handleRequestSlot</title>
-<polygon fill="#cdf3f4" stroke="#3fa4a6" points="162.39,-125.48 21.61,-125.48 21.61,-89.48 162.39,-89.48 162.39,-125.48"/>
+<polygon fill="#cdf4e5" stroke="#3fa680" points="162.39,-125.48 21.61,-125.48 21.61,-89.48 162.39,-89.48 162.39,-125.48"/>
 <text xml:space="preserve" text-anchor="start" x="47.75" y="-108.98" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">handleRequestSlot</text>
 <text xml:space="preserve" text-anchor="start" x="33.12" y="-98.98" font-family="Helvetica,sans-Serif" font-size="10.00">Slot riservato: $AssignedId</text>
 </g>
@@ -64,7 +64,7 @@
 <!-- handleSetSlot -->
 <g id="node4" class="node">
 <title>handleSetSlot</title>
-<polygon fill="#cdf3f4" stroke="#3fa4a6" points="373.02,-128.24 226.98,-128.24 226.98,-86.72 373.02,-86.72 373.02,-128.24"/>
+<polygon fill="#cdf4e5" stroke="#3fa680" points="373.02,-128.24 226.98,-128.24 226.98,-86.72 373.02,-86.72 373.02,-128.24"/>
 <text xml:space="preserve" text-anchor="start" x="267.38" y="-113.98" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">handleSetSlot</text>
 <text xml:space="preserve" text-anchor="start" x="238.5" y="-103.98" font-family="Helvetica,sans-Serif" font-size="10.00">Slot $sId aggiornato a stato:</text>
 <text xml:space="preserve" text-anchor="start" x="283.12" y="-93.98" font-family="Helvetica,sans-Serif" font-size="10.00">$sState</text>
@@ -79,7 +79,7 @@
 <!-- handleRequestPosition -->
 <g id="node5" class="node">
 <title>handleRequestPosition</title>
-<polygon fill="#cdf3f4" stroke="#3fa4a6" points="590.39,-128.24 437.61,-128.24 437.61,-86.72 590.39,-86.72 590.39,-128.24"/>
+<polygon fill="#cdf4e5" stroke="#3fa680" points="590.39,-128.24 437.61,-128.24 437.61,-86.72 590.39,-86.72 590.39,-128.24"/>
 <text xml:space="preserve" text-anchor="start" x="459.62" y="-113.98" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="10.00">handleRequestPosition</text>
 <text xml:space="preserve" text-anchor="start" x="449.12" y="-103.98" font-family="Helvetica,sans-Serif" font-size="10.00">Posizione per $locId: ($PosX,</text>
 <text xml:space="preserve" text-anchor="start" x="497.88" y="-93.98" font-family="Helvetica,sans-Serif" font-size="10.00">$PosY)</text>

@@ -453,6 +453,10 @@ QActor mocksonar context ctxcargocompany {
         delay 15000
     }
     Goto mockDetection
+    
+    State mockOFS{
+    	 forward cargoservice -m outOfService : outOfService(ofs)
+    }
 }
 
 /* -------------------------------------------------------------------------
@@ -477,6 +481,7 @@ QActor mockled context ctxcargocompany {
         }
     }
     Goto waitingLedState
+   
  }
 
 

@@ -36,6 +36,6 @@ with Diagram('cargocompany1Arch', show=False, outformat='png', graph_attr=grapha
      cargoservice >> Edge(color='magenta', style='solid', decorate='true', label='<requestPosition<font color="darkgreen"> slotPosition positionFailed</font> &nbsp; requestSlot<font color="darkgreen"> slotReserved slotFailed</font> &nbsp; setSlot<font color="darkgreen"> setSlotChanged setSlotFailed</font> &nbsp; >',  fontcolor='magenta') >> cargohold
      cargoservice >> Edge(color='magenta', style='solid', decorate='true', label='<moverobot<font color="darkgreen"> moverobotdone moverobotfailed</font> &nbsp; >',  fontcolor='magenta') >> robotsmart
      mockwebgui >> Edge(color='magenta', style='solid', decorate='true', label='<requestToLoad<font color="darkgreen"> loadAccepted loadRejected loadRetryLater</font> &nbsp; >',  fontcolor='magenta') >> cargoservice
-     mocksonar >> Edge(color='blue', style='solid',  decorate='true', label='<containerArrived &nbsp; >',  fontcolor='blue') >> cargoservice
+     mocksonar >> Edge(color='blue', style='solid',  decorate='true', label='<containerArrived &nbsp; outOfService &nbsp; >',  fontcolor='blue') >> cargoservice
      cargoservice >> Edge(color='blue', style='solid',  decorate='true', label='<ledState &nbsp; >',  fontcolor='blue') >> mockled
 diag
