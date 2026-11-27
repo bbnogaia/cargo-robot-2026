@@ -587,6 +587,11 @@ QActor led context ctxcargocompany {
         println("$name | Init led") color blue
     }
     Goto waitingLedState
+    
+    /**
+     *  STATE WORKING: ----------------------------------------------------------
+     *  Gestisce il led.
+     */
 
     State waitingLedState {
     }
