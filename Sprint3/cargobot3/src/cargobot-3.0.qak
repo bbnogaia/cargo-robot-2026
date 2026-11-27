@@ -1,0 +1,702 @@
+System cargocompany3
+
+mqttBroker "localhost" : 1883 eventTopic "sonar/distance"
+
+/*
+* MESSAGES -------------------------------------------------------------------------
+*/
+
+// cargoservice <-> webgui
+Request requestToLoad : requestToLoad(NOARGS)
+Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
+Reply loadRejected : loadRejected(ANSWER) for requestToLoad
+Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
+
+// cargoservice <-> cargohold
+Request requestSlot : requestSlot(NOARGS)
+Reply slotReserved : slotReserved(ANSWER) for requestSlot
+Reply slotFailed : slotFailed(REASON) for requestSlot
+
+Request setSlot : setSlot(SLOTID, STATE)
+Reply setSlotChanged : setSlotChanged(NOARGS) for setSlot
+Reply setSlotFailed : setSlotFailed(REASON) for setSlot
+
+Request requestPosition : requestPosition(LOCATION)
+Reply slotPosition : slotPosition(X, Y) for requestPosition
+Reply positionFailed : positionFailed(REASON) for requestPosition
+
+// cargoservice <-> robotsmart (cargorobot)
+Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
+Reply moverobotdone : moverobotdone(ARG) for moverobot 
+Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
+
+// cargoservice <-> sensor
+Event containerDetected : containerDetected(NOARGS)
+Event outOfService : outOfService(NOARGS)
+
+// cargoservice <-> led
+Dispatch ledState  : ledState(STATE)
+
+// MQTT
+Event sonarDistance : distance(D)
+Event ledBlink : ledBlink(STATE)
+
+/* -------------------------------------------------------------------------
+* CONTEXTS
+* -------------------------------------------------------------------------
+*/
+Context ctxcargocompany ip [ host="localhost" port=8040] 
+Context ctxrobotsmart ip [host="127.0.0.1" port=8020 ]
+
+ExternalQActor robotsmart context ctxrobotsmart
+
+
+/* -------------------------------------------------------------------------
+* CARGOHOLD 
+* -------------------------------------------------------------------------
+*/
+
+ 
+QActor cargohold context ctxcargocompany{
+    import "main.java.cargoHold.model.*"
+
+	[#
+		var hold: IHold = Hold()
+	#]
+		
+    State s0 initial {
+        println("$name | Init e caricamento modello CargoHold") color cyan
+    }
+    Goto waitingRequests
+
+	/**
+     *  STATE WAITREQ: ----------------------------------------------------------
+     *  Gestione richiesta slot libero.
+     *  Gestione aggiornamento stato slot (free, reserved, occupied).
+     *  Richiesta coordinate di uno slot, IOPort o HOME.
+     */
+
+    State waitingRequests {
+        println("$name | In attesa di richieste di gestione slot/posizioni...") color cyan
+    }
+    Transition t0
+        whenRequest requestSlot -> handleRequestSlot
+        whenRequest setSlot -> handleSetSlot
+        whenRequest requestPosition -> handleRequestPosition
+
+	/**
+     *  STATE HANDLESTATE: ----------------------------------------------------------
+     *  Gestione richiesta slot libero.
+     *  Gestione aggiornamento stato slot (free, reserved, occupied).
+     *  Richiesta coordinate di uno slot, IOPort o HOME.
+     */
+	    
+    State handleRequestSlot {
+        onMsg( requestSlot : requestSlot(NOARGS) ) {
+            [#
+                var hasSpace = hold.hasFreeSlot()
+            #]
+            if [# hasSpace #] {
+                [#
+                    val freeSlot = hold.getFirstFreeSlot()
+                    val AssignedId = freeSlot.getId()
+                    freeSlot.setSlotStatus(SlotStatus.RESERVED)
+                #]
+                println("$name | Slot riservato: $AssignedId") color cyan
+                replyTo requestSlot with slotReserved : slotReserved($AssignedId)
+            } else {
+                println("$name | Nessuno slot libero disponibile") color red
+                replyTo requestSlot with slotFailed : slotFailed(nospace)
+            }
+        }
+    }
+    Goto waitingRequests
+
+   
+    State handleSetSlot {
+        onMsg( setSlot : setSlot(SLOTID, STATE) ) {
+            [#
+                val sId = payloadArg(0)
+                val sState = payloadArg(1)
+                val slotObj = hold.getSlot(sId)
+            #]
+            if [# slotObj != null #] {
+                [#
+                    when (sState) {
+                        "free" -> slotObj.setSlotStatus(SlotStatus.FREE)
+                        "reserved" -> slotObj.setSlotStatus(SlotStatus.RESERVED)
+                        "occupied" -> slotObj.setSlotStatus(SlotStatus.OCCUPIED)
+                    }
+                #]
+                println("$name | Slot $sId aggiornato a stato: $sState") color cyan
+                replyTo setSlot with setSlotChanged : setSlotChanged(NOARGS)
+            } else {
+                replyTo setSlot with setSlotFailed : setSlotFailed(notfound)
+            }
+        }
+    }
+    Goto waitingRequests
+
+    
+    State handleRequestPosition {
+        onMsg( requestPosition : requestPosition(LOCATION) ) {
+            [#
+                val locId = payloadArg(0)
+                var PosX = 0
+                var PosY = 0
+                var found = false
+                
+                if (locId == "ioport") {
+                    val pIOPort = hold.getIOPortPosition()
+                    if (pIOPort != null) {
+                        PosX = pIOPort.getX()
+                        PosY = pIOPort.getY()
+                        found = true
+                    }
+                } else if (locId == "home") {
+                    val pHome = hold.getHomePosition()
+                    if (pHome != null) {
+                        PosX = pHome.getX()
+                        PosY = pHome.getY()
+                        found = true
+                    }
+                } else {
+                    val pos = hold.getSlotPosition(locId)
+                    if (pos != null) {
+                        PosX = pos.getX()
+                        PosY = pos.getY()
+                        found = true
+                    }
+                }
+            #]
+            if [# found #] {
+                println("$name | Posizione per $locId: ($PosX, $PosY)") color cyan
+                replyTo requestPosition with slotPosition : slotPosition($PosX, $PosY)
+            } else {
+                replyTo requestPosition with positionFailed : positionFailed(notfound)
+            }
+        }
+    }
+    Goto waitingRequests
+}
+
+
+
+
+
+/* -------------------------------------------------------------------------
+* CARGOSERVICE
+* -------------------------------------------------------------------------
+*/
+ 
+QActor cargoservice context ctxcargocompany {
+
+    [#
+        var AssignedSlotId: String = ""
+        var TargetX: Int = 0
+        var TargetY: Int = 0
+        var Slot5X: Int = 0
+        var Slot5Y: Int = 0 
+        var HomeX: Int = 0
+        var HomeY: Int = 0      
+        var IOPortX: Int = 0
+        var IOPortY: Int = 0
+    #]
+    
+    /**
+     *  STATE INIT: ----------------------------------------------------------
+     *  Caricamento delle coordinate fisse: IOPort, Slot5, Home.
+     *  In caso di errore è necessario riavviare il sistema.
+     */
+     
+    State initAskIOPort initial {
+        println("$name | Init e richiesta IOPort...") color green
+        delay 1000 // Piccolo delay per assicurarsi che cargohold sia pronto ad accettare richieste
+        request cargohold -m requestPosition : requestPosition(ioport)
+    }
+    Transition ti1
+        whenReply slotPosition -> initAskSlot5
+        whenReply positionFailed -> initError
+
+    State initAskSlot5 {
+        onMsg( slotPosition : slotPosition(X, Y) ) {
+            [#
+                IOPortX = payloadArg(0).toInt()
+                IOPortY = payloadArg(1).toInt()
+            #]
+            println("$name | IOPort caricata: ($IOPortX, $IOPortY). Richiesta Slot5...") color green
+            request cargohold -m requestPosition : requestPosition(slot5)
+        }
+    }
+    Transition ti2
+        whenReply slotPosition -> initAskHome
+        whenReply positionFailed -> initError
+
+    State initAskHome {
+        onMsg( slotPosition : slotPosition(X, Y) ) {
+            [#
+                Slot5X = payloadArg(0).toInt()
+                Slot5Y = payloadArg(1).toInt()
+            #]
+            println("$name | Slot5 caricato: ($Slot5X, $Slot5Y). Richiesta HOME...") color green
+            request cargohold -m requestPosition : requestPosition(home)
+        }
+    }
+    Transition ti3
+        whenReply slotPosition -> initComplete
+        whenReply positionFailed -> initError
+
+    State initComplete {
+        onMsg( slotPosition : slotPosition(X, Y) ) {
+            [#
+                HomeX = payloadArg(0).toInt()
+                HomeY = payloadArg(1).toInt()
+            #]
+            println("$name | HOME caricata: ($HomeX, $HomeY). Init completato!") color green
+        }
+    }
+    Goto disengaged
+
+    State initError {
+        println("$name | ERRORE: Impossibile recuperare le posizioni fisse da cargohold all'avvio! Si consiglia di riavviare il sistema.") color red
+    }
+
+     /**
+     *  STATE DISENGAGED: ----------------------------------------------------------
+     *  Il sistema rimane in attesa di richieste di carico.
+     */
+     
+    State disengaged {
+        println("$name | Disengaged: in attesa di richieste...") color magenta
+        //blink led
+        forward led -m ledState : ledState(off)
+    }
+    Transition td1
+        whenRequest requestToLoad -> drainEvents
+        
+    /**
+     *  STATE LOAD: -------------------------------------------------------------------
+     *  Il sistema riceve una richiesta di carico
+     *  e verifica la disponibilità degli slot.
+     *  Recupera le coordinate dello slot assegnato.
+     */
+     
+    State drainEvents {
+        println("$name | Richiesta di carico: scarto eventi vecchi...") color magenta
+    }
+    Transition tl01
+        whenTime 300 -> waitFreshEvent
+        whenEvent containerDetected -> drainEvents
+        whenEvent outOfService -> drainEvents
+
+    State waitFreshEvent {
+        println("$name | Verifico la presenza di container e lo stato del sonar...") color magenta
+    }
+    Transition tl02
+        whenTime 3500 -> handleLoad
+        whenEvent containerDetected -> handleRetry
+        whenEvent outOfService -> handleRetry
+        
+    State handleRetry {
+        println("$name | Zona di carico occupata o sonar fuori servizio: retrylater") color magenta
+        replyTo requestToLoad with loadRetryLater : loadRetryLater(retrylater)
+    }
+    Goto disengaged
+     
+    State handleLoad {
+        println("$name | Ricevuta richiesta di carico: requestToLoad") color magenta
+        request cargohold -m requestSlot : requestSlot(NOARGS)
+        
+    }
+    Transition tl1
+        whenReply slotReserved -> confirmLoadToClient
+        whenReply slotFailed -> handleLoadFailed
+
+    State handleLoadFailed {
+        println("$name | Nessuno slot disponibile. Rispondo alla webgui...") color magenta
+        replyTo requestToLoad with loadRejected : loadRejected(rejected)
+    }
+    Goto disengaged
+
+    State confirmLoadToClient {
+        onMsg( slotReserved : slotReserved(ANSWER) ) {
+            [# AssignedSlotId = payloadArg(0) #]
+            println("$name | Slot assegnato: $AssignedSlotId. Rispondo alla webgui...") color magenta
+            replyTo requestToLoad with loadAccepted : loadAccepted($AssignedSlotId)
+        }
+        //blink led
+        forward led -m ledState : ledState(on)
+    }
+    Goto askSlotPosition
+
+    State askSlotPosition {
+        println("$name | Richiesta coordinate per $AssignedSlotId...") color magenta
+        request cargohold -m requestPosition : requestPosition($AssignedSlotId)
+    }
+    Transition tl2
+        whenReply slotPosition -> saveSlotPosition
+        whenReply positionFailed -> handlePositionFail
+
+    State saveSlotPosition {
+        onMsg( slotPosition : slotPosition(X, Y) ) {
+            [#
+                TargetX = payloadArg(0).toInt()
+                TargetY = payloadArg(1).toInt()
+            #]
+            println("$name | Coordinate $AssignedSlotId memorizzate: ($TargetX, $TargetY).") color magenta
+        }
+    }
+    Goto waitForContainer
+    
+    State handlePositionFail {
+    	println("$name | ERRORE: Slot Inesistente...") color magenta
+    }
+    Goto disengaged
+
+     /**
+     *  STATE WAITCONTAINER: -------------------------------------------------------------------------------------
+     *  Attesa del posizionamento del container.
+     */
+     
+    State waitForContainer {
+        println("$name | In attesa del container nell'area IOPort (max 30s)...") color magenta
+    }
+    Transition tw1
+        whenTime 30000 -> handleTimeout // Timeout scaduto (30 secondi)
+        whenEvent containerDetected -> moveToIOPort
+        whenEvent outOfService -> disengaged  
+
+    State handleTimeout {
+        println("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...") color red
+        request cargohold -m setSlot : setSlot($AssignedSlotId, free)
+    }
+    Transition tw2
+        whenReply setSlotChanged -> disengaged
+        whenReply setSlotFailed -> disengaged
+
+
+	 /**
+     *  STATE ENGAGED: ----------------------------------------------------------
+     *  Operazioni di movimento del container.
+     */
+
+
+    // --- STEP 0: Il robot raggiunge l'IOPort per prelevare il container ---
+    State moveToIOPort {
+        println("$name | Container rilevato! Comando cargorobot verso IOPort in coordinate ($IOPortX, $IOPortY)") color magenta
+        request robotsmart -m moverobot : moverobot($IOPortX, $IOPortY, 330)
+    }
+    Transition te1
+        whenReply moverobotdone -> moveToSlot5
+        whenReply moverobotfailed -> handlePreDeliveryFailure
+
+    // --- STEP 1: Muove il robot dall'IOPort allo slot5 per la marcatura ---
+    State moveToSlot5 {
+        delay 2000
+        println("$name | IOPort raggiunta. Comando cargorobot verso slot5 (marcatura) in coordinate ($Slot5X, $Slot5Y)") color magenta
+        request robotsmart -m moverobot : moverobot($Slot5X, $Slot5Y, 330)
+    }
+    Transition te2
+        whenReply moverobotdone -> markContainer
+        whenReply moverobotfailed -> handlePreDeliveryFailure
+
+    // --- STEP 2: Attesa marcatura (simulata con delay o segnale marker) ---
+    State markContainer {
+        println("$name | Container allo slot5. Marcatura barcode...") color magenta
+        delay 3000 // Simulazione tempo di marcatura
+    }
+    Goto moveToFinalSlot
+
+    // --- STEP 3: Muove il robot dallo slot5 allo slot finale riservato ---
+    State moveToFinalSlot {
+        println("$name | Marcatura completata. Comando cargorobot verso lo slot finale: $AssignedSlotId ($TargetX, $TargetY)") color magenta
+        request robotsmart -m moverobot : moverobot( $TargetX, $TargetY, 330)
+    }
+    Transition te3
+        whenReply moverobotdone -> finalizeStorage
+        whenReply moverobotfailed -> handlePreDeliveryFailure
+
+    // --- STEP 4: Finalizzazione nello storage ---
+    State finalizeStorage {
+        println("$name | Container posizionato. Aggiornamento stato $AssignedSlotId ad OCCUPIED...") color green
+        request cargohold -m setSlot : setSlot($AssignedSlotId, occupied)
+    }
+    Transition te4
+        whenReply setSlotChanged -> returnToHome
+        whenReply setSlotFailed -> returnToHome
+
+    // --- STEP 5: Il robot ritorna alla HOME ---
+    State returnToHome {
+        println("$name | Comando di ritorno alla HOME ($HomeX, $HomeY)...") color magenta
+        request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
+    }
+    Transition te5
+        whenReply moverobotdone -> finishOperation
+        whenReply moverobotfailed -> handlePostDevliveryFailure
+
+    State finishOperation {
+        println("$name | Cargorobot rientrato alla HOME con successo.") color green
+    }
+    Goto disengaged
+
+    State handlePreDeliveryFailure {
+        println("$name | ERRORE pre-delivery: movimento del cargorobot fallito! Tentaivo di ritorno a HOME...") color red
+        println("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema") color red
+        request cargohold -m setSlot : setSlot($AssignedSlotId, free)
+    }
+    Transition te6
+        whenReply setSlotChanged -> returnToHome
+        whenReply setSlotFailed -> returnToHome
+
+    State handlePostDevliveryFailure {
+        println("$name | ERRORE post-delivery: movimento del cargorobot fallito! Tentativo di ritorno a HOME...") color red
+        println("$name | ATTENZIONE: In caso di molteplici errori è necessario riavviare il sistema") color red
+        request robotsmart -m moverobot : moverobot($HomeX, $HomeY, 330)
+    }
+    Transition te7
+        whenReply moverobotdone -> disengaged
+        whenReply moverobotfailed -> handlePostDevliveryFailure
+}
+
+
+
+
+
+/* -------------------------------------------------------------------------
+ * SONAR
+ * -------------------------------------------------------------------------
+ */
+ 
+QActor sonar context ctxcargocompany {
+
+    [#
+        val DFREE = 20.0
+        val PERIOD_MS = 3000L
+
+        var belowSince = 0L
+        var aboveSince = 0L
+
+        var sendContainerEvent = false
+        var sendOutOfServiceEvent = false
+    #]
+
+    State s0 initial {
+        println("$name | Avvio sensore sonar") color blue
+    }
+    Goto waitingDistance
+
+    /**
+     *  STATE WORKING: ----------------------------------------------------------
+     *  Processa le distanze.
+     */
+
+    State waitingDistance {
+        // Attesa delle misurazioni MQTT
+    }
+    Transition t0
+        whenEvent sonarDistance -> processDistance
+
+
+    State processDistance {
+        onMsg( sonarDistance : distance(D) ) {
+            [#
+                val raw = currentMsg.msgContent()
+                val distance = raw.substringAfter("distance(", "")
+                                  .substringBefore(")")
+                                  .trim()
+                                  .toDoubleOrNull()
+
+                val now = System.currentTimeMillis()
+
+                if (distance != null) {
+
+                    println("$name | Distanza ricevuta: $distance cm")
+
+                    // CASO 1: CONTAINER PRESENTE (D < DFREE/2)
+                    // belowSince = inizio del conteggio, poi ultimo invio dell'evento.
+                    // Si invia quando il container e' presente da almeno 3 secondi,
+                    // e di nuovo ogni 3 secondi finche' resta li'.
+                    if (distance < DFREE / 2.0) {
+
+                        aboveSince = 0L
+
+                        if (belowSince == 0L) {
+                            belowSince = now
+                            println("$name | Container potenzialmente rilevato")
+                        } else if (now - belowSince >= PERIOD_MS) {
+                            sendContainerEvent = true
+                            belowSince = now
+                        }
+                    }
+
+                    // CASO 2: SONAR OUT OF SERVICE (D > DFREE)
+                    // Stessa logica: primo invio dopo 3 secondi, poi ogni 3 secondi.
+                    else if (distance > DFREE) {
+
+                        belowSince = 0L
+
+                        if (aboveSince == 0L) {
+                            aboveSince = now
+                            println("$name | Sonar potenzialmente guasto")
+                        } else if (now - aboveSince >= PERIOD_MS) {
+                            sendOutOfServiceEvent = true
+                            aboveSince = now
+                        }
+                    }
+
+                    // CASO 3: DISTANZA NEL RANGE NORMALE (DFREE/2 <= D <= DFREE)
+                    // Il container e' uscito o il sonar e' tornato normale: il conteggio riparte da zero.
+                    else {
+
+                        belowSince = 0L
+                        aboveSince = 0L
+
+                        println("$name | Distanza nel range normale")
+                    }
+
+                } else {
+                    println("$name | Payload non valido: $raw")
+                }
+            #]
+        }
+
+        // Emissione evento containerDetected
+        if [# sendContainerEvent #] {
+            println("$name | CONTAINER PRESENTE! Emetto containerDetected") color blue
+            emitlocal containerDetected : containerDetected(ok)
+            [# sendContainerEvent = false #]
+        }
+
+        // Emissione evento outOfService
+        if [# sendOutOfServiceEvent #] {
+            println("$name | OUT OF SERVICE! Emetto outOfService") color red
+            emitlocal outOfService : outOfService(ofs)
+            [# sendOutOfServiceEvent = false #]
+        }
+    }
+    Goto waitingDistance
+
+}
+
+/* -------------------------------------------------------------------------
+* LED
+* -------------------------------------------------------------------------
+*/
+
+QActor led context ctxcargocompany {
+
+    State s0 initial {
+        println("$name | Init led") color blue
+    }
+    Goto waitingLedState
+    
+    /**
+     *  STATE WORKING: ----------------------------------------------------------
+     *  Gestisce il led.
+     */
+
+    State waitingLedState {
+    }
+    Transition t0
+        whenMsg ledState -> handleLedState
+
+    State handleLedState {
+        onMsg( ledState : ledState(STATE) ) {
+            [# val St = payloadArg(0) #]
+            println("$name | Stato led: $St") color blue
+            publish "led/blink" -m ledBlink : ledBlink($St)
+        }
+    }
+    Goto waitingLedState
+}
+
+
+/* -------------------------------------------------------------------------
+* WEBGUI
+* -------------------------------------------------------------------------
+*/
+
+QActor webgui context ctxcargocompany {
+
+    State s0 initial {
+        println("$name | Init webgui") color yellow
+    }
+    Goto waitingRequests
+
+    /**
+     *  STATE WAITING: -----------------------------------------------------------
+     *  In attesa di richieste dal server web o di eventi outOfService.
+     */
+
+    State waitingRequests {
+        println("$name | In attesa di richieste dalla pagina web...") color yellow
+    }
+    Transition t0
+        whenRequest requestToLoad -> forwardRequest
+        whenEvent outOfService -> handleOutOfService
+
+    State handleOutOfService {
+        println("$name | Out of service") color yellow
+        updateResource [# "outOfService(ofs)" #]
+    }
+    Goto waitingRequests
+
+    /**
+     *  STATE FORWARD: -----------------------------------------------------------
+     *  Inoltra la requestToLoad a cargoservice e attende la reply.
+     */
+
+    State forwardRequest {
+        println("$name | requestToLoad dalla pagina: inoltro a cargoservice") color yellow
+        request cargoservice -m requestToLoad : requestToLoad(NOARGS)
+    }
+    Goto waitingReply
+
+    State waitingReply {
+    }
+    Transition t1
+        whenReply loadAccepted -> handleAccepted
+        whenReply loadRejected -> handleRejected
+        whenReply loadRetryLater -> handleRetry
+        whenEvent outOfService -> handleOutOfServiceWhileWaiting
+
+    // outOfService mentre si attende la reply: lo notifico subito e torno ad attendere
+    State handleOutOfServiceWhileWaiting {
+        println("$name | Out of service") color yellow
+        updateResource [# "outOfService(ofs)" #]
+    }
+    Goto waitingReply
+
+    /**
+     *  STATE REPLY: -------------------------------------------------------------
+     *  Rimanda al server web la reply ricevuta da cargoservice.
+     */
+
+    State handleAccepted {
+        onMsg( loadAccepted : loadAccepted(ANSWER) ) {
+            [# val Ans = payloadArg(0) #]
+            println("$name | Richiesta ACCETTATA. Slot: $Ans") color yellow
+            replyTo requestToLoad with loadAccepted : loadAccepted($Ans)
+        }
+    }
+    Goto waitingRequests
+
+    State handleRejected {
+        onMsg( loadRejected : loadRejected(ANSWER) ) {
+            [# val Ans = payloadArg(0) #]
+            println("$name | Richiesta RIFIUTATA") color yellow
+            replyTo requestToLoad with loadRejected : loadRejected($Ans)
+        }
+    }
+    Goto waitingRequests
+
+    State handleRetry {
+        onMsg( loadRetryLater : loadRetryLater(ANSWER) ) {
+            [# val Ans = payloadArg(0) #]
+            println("$name | Richiesta RETRY LATER") color yellow
+            replyTo requestToLoad with loadRetryLater : loadRetryLater($Ans)
+        }
+    }
+    Goto waitingRequests
+}
+ 

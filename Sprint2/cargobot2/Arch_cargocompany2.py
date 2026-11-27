@@ -28,17 +28,14 @@ with Diagram('cargocompany2Arch', show=False, outformat='png', graph_attr=grapha
      with Cluster('ctxcargocompany', graph_attr=nodeattr):
           cargohold=Custom('cargohold','./qakicons/symActorWithobjSmall.png')
           cargoservice=Custom('cargoservice','./qakicons/symActorWithobjSmall.png')
-          sonar=Custom('sonar','./qakicons/symActorWithobjSmall.png')
-          led=Custom('led','./qakicons/symActorWithobjSmall.png')
+          mocksonar=Custom('mocksonar','./qakicons/symActorWithobjSmall.png')
+          mockled=Custom('mockled','./qakicons/symActorWithobjSmall.png')
           mockwebgui=Custom('mockwebgui','./qakicons/symActorWithobjSmall.png')
      with Cluster('ctxrobotsmart', graph_attr=nodeattr):
           robotsmart=Custom('robotsmart(ext)','./qakicons/externalQActor.png')
-     sys >> Edge( label='containerDetected', **evattr, decorate='true', fontcolor='darkgreen') >> cargoservice
-     sys >> Edge( label='outOfService', **evattr, decorate='true', fontcolor='darkgreen') >> cargoservice
-     sys >> Edge( label='sonarDistance', **evattr, decorate='true', fontcolor='darkgreen') >> sonar
-     sys >> Edge( label='outOfService', **evattr, decorate='true', fontcolor='darkgreen') >> mockwebgui
      cargoservice >> Edge(color='magenta', style='solid', decorate='true', label='<requestPosition<font color="darkgreen"> slotPosition positionFailed</font> &nbsp; requestSlot<font color="darkgreen"> slotReserved slotFailed</font> &nbsp; setSlot<font color="darkgreen"> setSlotChanged setSlotFailed</font> &nbsp; >',  fontcolor='magenta') >> cargohold
      cargoservice >> Edge(color='magenta', style='solid', decorate='true', label='<moverobot<font color="darkgreen"> moverobotdone moverobotfailed</font> &nbsp; >',  fontcolor='magenta') >> robotsmart
      mockwebgui >> Edge(color='magenta', style='solid', decorate='true', label='<requestToLoad<font color="darkgreen"> loadAccepted loadRejected loadRetryLater</font> &nbsp; >',  fontcolor='magenta') >> cargoservice
-     cargoservice >> Edge(color='blue', style='solid',  decorate='true', label='<ledState &nbsp; >',  fontcolor='blue') >> led
+     mocksonar >> Edge(color='blue', style='solid',  decorate='true', label='<containerArrived &nbsp; outOfService &nbsp; >',  fontcolor='blue') >> cargoservice
+     cargoservice >> Edge(color='blue', style='solid',  decorate='true', label='<ledState &nbsp; >',  fontcolor='blue') >> mockled
 diag

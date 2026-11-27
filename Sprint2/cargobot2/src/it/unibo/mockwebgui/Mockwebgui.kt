@@ -33,7 +33,6 @@ class Mockwebgui ( name: String, scope: CoroutineScope, isconfined: Boolean=fals
 				state("s0") { //this:State
 					action { //it:State
 						CommUtils.outyellow("$name | Init ")
-						delay(5000) 
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
@@ -50,10 +49,9 @@ class Mockwebgui ( name: String, scope: CoroutineScope, isconfined: Boolean=fals
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t041",targetState="handleAccepted",cond=whenReply("loadAccepted"))
-					transition(edgeName="t042",targetState="handleRejected",cond=whenReply("loadRejected"))
-					transition(edgeName="t043",targetState="handleRetry",cond=whenReply("loadRetryLater"))
-					transition(edgeName="t044",targetState="handleOutOfService",cond=whenEvent("outOfService"))
+					 transition(edgeName="t034",targetState="handleAccepted",cond=whenReply("loadAccepted"))
+					transition(edgeName="t035",targetState="handleRejected",cond=whenReply("loadRejected"))
+					transition(edgeName="t036",targetState="handleRetry",cond=whenReply("loadRetryLater"))
 				}	 
 				state("handleAccepted") { //this:State
 					action { //it:State
@@ -84,17 +82,6 @@ class Mockwebgui ( name: String, scope: CoroutineScope, isconfined: Boolean=fals
 				state("handleRetry") { //this:State
 					action { //it:State
 						CommUtils.outyellow("$name | Richiesta RETRY LATER")
-						delay(14000) 
-						//genTimer( actor, state )
-					}
-					//After Lenzi Aug2002
-					sysaction { //it:State
-					}	 	 
-					 transition( edgeName="goto",targetState="mockReq", cond=doswitch() )
-				}	 
-				state("handleOutOfService") { //this:State
-					action { //it:State
-						CommUtils.outyellow("$name | Out Of Service")
 						delay(14000) 
 						//genTimer( actor, state )
 					}

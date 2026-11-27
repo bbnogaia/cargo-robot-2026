@@ -1,7 +1,6 @@
 %====================================================================================
 % cargocompany2 description   
 %====================================================================================
-mqttBroker("localhost", "1883", "sonar/distance").
 request( requestToLoad, requestToLoad(NOARGS) ).
 reply( loadAccepted, loadAccepted(ANSWER) ).  %%for requestToLoad
 reply( loadRejected, loadRejected(ANSWER) ).  %%for requestToLoad
@@ -18,11 +17,9 @@ reply( positionFailed, positionFailed(REASON) ).  %%for requestPosition
 request( moverobot, moverobot(TARGETX,TARGETY,STEPTIME) ).
 reply( moverobotdone, moverobotdone(ARG) ).  %%for moverobot
 reply( moverobotfailed, moverobotfailed(PLANDONE,PLANTODO) ).  %%for moverobot
-event( containerDetected, containerDetected(NOARGS) ).
-event( outOfService, outOfService(NOARGS) ).
+dispatch( containerArrived, containerArrived(NOARGS) ).
+dispatch( outOfService, outOfService(NOARGS) ).
 dispatch( ledState, ledState(STATE) ).
-event( sonarDistance, distance(D) ).
-event( ledBlink, ledBlink(STATE) ).
 %====================================================================================
 context(ctxcargocompany, "localhost",  "TCP", "8040").
 context(ctxrobotsmart, "127.0.0.1",  "TCP", "8020").
@@ -31,9 +28,9 @@ context(ctxrobotsmart, "127.0.0.1",  "TCP", "8020").
  static(cargohold).
   qactor( cargoservice, ctxcargocompany, "it.unibo.cargoservice.Cargoservice").
  static(cargoservice).
-  qactor( sonar, ctxcargocompany, "it.unibo.sonar.Sonar").
- static(sonar).
-  qactor( led, ctxcargocompany, "it.unibo.led.Led").
- static(led).
+  qactor( mocksonar, ctxcargocompany, "it.unibo.mocksonar.Mocksonar").
+ static(mocksonar).
+  qactor( mockled, ctxcargocompany, "it.unibo.mockled.Mockled").
+ static(mockled).
   qactor( mockwebgui, ctxcargocompany, "it.unibo.mockwebgui.Mockwebgui").
  static(mockwebgui).

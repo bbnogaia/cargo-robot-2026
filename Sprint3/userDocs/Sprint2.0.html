@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+
+<link rel="stylesheet" type="text/css" href="css/mystyle.css">
+<script type="text/javascript" src="js/highlight-java-code.js" defer></script>
+<!--
+    <script type="text/javascript" src="../css/issStyle.js"></script>
+-->
+    
+</head>
+   
+<title>CargoBot26</title></head>
+    
+
+<body>
+<div id="top">
+<h1>CargoBot26: SPRINT2</h1>
+</div>  
+
+<div class="body">  
+
+<h2>Introduction</h2>
+<pre>
+<b>GOAL</b>: 
+- Analizzare e sviluppare i componenti relativi al Raspberry Pico W
+</pre>
+
+<h2>Requirements</h2>
+<!-- <div class="remark"> -->
+<pre>
+
+<img src="./img/req.jpg" alt="emiglio" width="50%" height="50%">
+
+• The sensor associated to the IOPort is a device (a sonar) used to detect the presence of a container, when it measures a
+  distance D, such that D < DFREE/2, during a reasonable time (e.g. 3 secs). 
+
+• <b>cargoservice</b> sends the answer retrylater, if the <b>IOPort</b> is currently occupied by a container or if the system is <i>Out of service</i>
+
+• Otherwise, it considers the system as <b>engaged</b>, detects a free slot and returns as answer the name of such a reserved slot.
+  While engaged, the system must blink a Led.
+
+When the <i>request to load</i> is accepted, the customer must move the container in the <i>sensor</i> area within prefixed amount of time (e.g. 30
+secs), otherwise the systems becomes <b>disengaged</b>. Then, the <i>cargoservice</i> uses the <i>cargorobot</i> to move the container from the
+<i>IOPort</i> to the <b>slot5</b> (for marking the container) and then to the reserved slot.
+
+The service must also show on the <i>display</i> on the <i>IOPort</i>:
+
+• the message <b>'Out of service'</b> if the <i>sonar sensor</i> measures a distance D &gt; DFREE for at least 3 secs 
+  (perhaps a failure of the <i>sonar</i>).
+
+</pre>
+  
+
+<h2>Requirement Analysis</h2>
+
+<pre>
+A partire da quanto svolto nello Sprint1, ci concentriamo sui seguenti requisiti: 
+
+• Studio e sviluppo del software relativo al Raspberry Pico W.
+
+• Studio del macro-componente <span style="color:red;"><b>sonar</b></span> e della logica relativa alle misurazioni effettuate dal dispositivo fisico.
+
+• Studio del macro-componente <span style="color:red;"><b>led</b></span> e della logica relativa all'accensione e allo spegnimento del led fisico.
+
+</pre>
+ 
+<h2>Problem Analysis</h2>
+<pre>
+<b>MQTT:</b>
+
+• Data la natura distribuita del nostro sistema occorre decidere come i nodi debbano scambiarsi informazioni, perché la scelta del protocollo ha conseguenze sull’architettura, 
+  sulla complessità del codice e sull’affidabilità della comunicazione. Le opzioni possibili sono diverse: socket TCP o UDP diretti, HTTP, CoAP, WebSocket oppure MQTT.
+
+• Il protocollo <b>MQTT</b> si adatta alle nostre esigenze:
+
+  <b>1.</b> Il protocollo è leggero e pensato per dispositivi con poche risorse: il Pico W ha il Wi-Fi integrato e in MicroPython basta la libreria umqtt.simple per pubblicare 
+  e ricevere messaggi con poche righe di codice.
+
+  <b>2.</b> Il modello publish/subscribe si adatta bene alla natura del problema: il sonar produce un flusso di misurazioni asincrone e il led riceve comandi occasionali, 
+  quindi il sensore pubblica su un topic senza sapere chi lo ascolta, e il broker si occupa di consegnare i messaggi a tutti gli attori interessati.
+
+  <b>3.</b> Il sistema QAK supporta MQTT in modo nativo e vede il Pico W solo come una sorgente di eventi su un topic senza il bisogno di conoscere
+  indirizzo IP e PORTA del dispositivo (viceversa per il Pico W). 
+
+  <img src="../userDocs/img/mqtt.png" alt="alessandro" width="50%" height="50%">
+
+</pre>
+
+<pre>
+<b>Software del Pico W:</b>
+
+• Il codice in esecuzione sul Raspberry Pico W dovrà connettersi al Wi-Fi e al broker MQTT e svolgere due compiti in parallelo:
+
+  <b>1.</b> Comunire le distanze rilevate.
+  <b>2.</b> Ricevere lo stato del led associato e gestire il suo funzionamento.
+
+• Per integrarsi con il sistema, il software sviluppato prevede che i messaggi pubblicati dal Pico W usino lo stesso formato dei messaggi QAK.
+  <code>
+    // Esempio di riferimento:
+    msg(sonarDistance,event,pico,none,distance(D),N)
+  </code>
+  In questo modo il runtime QAK riconosce direttamente la misura come l’evento sonarDistance, senza conversioni intermedie.
+
+• L'unità di misura di riferimento sono i centimetri.
+
+</pre>
+
+<pre>
+<b>Dettaglio messaggi:</b>
+
+  •  <span style="color:rgb(0, 85, 255);"><b>MQTT</b></span>
+  <code>
+    Event sonarDistance : distance(D)
+    Event ledBlink : ledBlink(STATE)
+  </code>
+
+  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; sonar</b></span>
+  <code>
+    Event containerDetected : containerDetected(NOARGS)
+    Event outOfService : outOfService(NOARGS)
+  </code>
+
+•  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; led</b></span>
+  <code>
+    Dispatch ledState  : ledState(STATE)
+  </code>
+  Messaggi attesi:
+  - <b>ledState</b>: "on", "off"
+
+</pre>
+
+<pre>
+<b>Coda dei messaggi:</b>
+
+• Gli eventi emessi dal sonar non sono stati, ma segnalazioni che il runtime QAK accoda per ogni attore. 
+  Se <span style="color:red;"><b>cargoservice</b></span> sta svolgendo altre attività, gli eventi emessi restano nella coda associata.
+
+• Quando arriva una richiesta di carico, questi eventi potrebbero descrivere una situazione ormai superata.
+  Per evitarlo dobbiamo aggiungere a <span style="color:red;"><b>cargoservice</b></span> un nuovo stato che consuma e scarta gli eventi accumulati e si concentra su quelli successivi alla richiesta di carico.
+
+    <img src="../userDocs/img/coda.png" alt="alessandro" width="60%" height="60%">
+</pre>
+
+<h2>Project</h2> 
+<pre>
+<b>MQTT mosquitto:</b>
+
+• <b>Mosquitto</b> è un broker MQTT open source, leggero e gratuito, che permette la comunicazione tra componenti distribuiti.
+  Funziona da intermediario: riceve i messaggi pubblicati dai Publisher e li inoltra ai Subscriber di una Topic, utilizzando il protocollo MQTT.
+
+</pre>
+<pre>
+<b>Software del Pico W:</b>
+
+• Il software sviluppato per il <b>Pico W</b> è capace di gestire tutto ciò che rigurada il sonar HC-SR04 e il led integrato nel microcontrollore.
+
+  • <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint2/fetal_pico_cargocompany.py'>Software Pico W</a></b>
+
+</pre>
+
+<pre>
+<b>Stati del servizio sonar:</b>
+<img src="../userDocs/img/cargobot-2.0_schemi/sonar.svg" alt="alessandro" width="40%" height="40%">
+
+• <b>MARCO-STATO: WORKING</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">waitingDistance</td>
+      <td style="padding: 8px;">In attessa di distanze sulla topic MQTT associata.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">processDistance</td>
+      <td style="padding: 8px;">Processa la distanza ricevuta e comunica eventuali eventi al sistema.</td>
+    </tr>
+</table>
+
+</pre>
+
+<pre>
+<b>Stati del servizio led:</b>
+<img src="../userDocs/img/cargobot-2.0_schemi/led.svg" alt="alessandro" width="40%" height="40%">
+
+• <b>MARCO-STATO: WORKING</b>
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">waitingLedState</td>
+      <td style="padding: 8px;">In attessa di messaggi.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">handleLedState</td>
+      <td style="padding: 8px;">Comunica lo stato del led sulla topic MQTT associata.</td>
+    </tr>
+</table>
+
+</pre>
+
+<pre>
+<b>Coda degli eventi di cargoservice:</b>
+
+• Si sviluppano degli stati aggiuntivi per drenare la coda dagli eventi (considerati "vecchi") associati a: 
+  - containerDetected
+  - outOfService
+
+• <span style="color:red;"><b>cargoservice</b></span> risponde retrylater a una richiesta di carico quando, nella finestra di verifica successiva alla richiesta, riceve un evento "fresco" dal <span style="color:red;"><b>sonar</b></span>: 
+  containerDetected se la zona di carico è già occupata da un container, oppure outOfService se il sonar risulta guasto.
+
+<table border="1" style="border-collapse: collapse; width: 100%; text-align: left;">
+  <thead>
+    <tr style="background-color: #f2f2f2;">
+      <th style="padding: 8px;">Stato</th>
+      <th style="padding: 8px;">Descrizione</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding: 8px;">drainEvents</td>
+      <td style="padding: 8px;">Consuma un evento associato.</td>
+    </tr>
+    <tr>
+      <td style="padding: 8px;">waitFreshEvent</td>
+      <td style="padding: 8px;">Attende un evento considerato "nuovo".</td>
+    </tr>
+     <tr>
+      <td style="padding: 8px;">handleRetry</td>
+      <td style="padding: 8px;">Risponde alla richiesta di carico: "retrylater".</td>
+    </tr>
+</table>
+</pre>
+
+<pre>
+<b>Modello:</b>
+
+• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint2/cargobot2/src/cargobot-2.0.qak'>Qak eseguibile</a></b> del sistema.
+</pre>
+
+<h2>Testing</h2> 
+<pre>
+Piani di test sviluppati:
+
+• <b><a href='https://github.com/bbnogaia/cargo-robot-2026/blob/main/Sprint2/cargotest2/src/cargotest2/sonarTest.java'>Codice test sonar/led</a></b>
+
+</pre>
+
+ 
+<!-- USEFUL
+<table style="width:100%" border="1">
+<tr>
+<td style="width:50%">
+</td>
+<td></td>
+</tr>
+</table>
+-->
+	      	
+<br/><br/> 	
+</div>   
+
+<div style="background-color:rgba(86, 56, 253, 0.9); width:60%; text-align:left; color:white; padding:15px;">
+    <h3>Team</h3>
+    <p>
+        <strong>Alessandro Quaranta</strong> - alessandro.quaranta@studio.unibo.it<br>
+        <strong>Gaia Verzelli</strong> - gaia.verzelli@studio.unibo.it
+    </p>
+    <p>
+        <strong>Project GitHub repository:</strong><br>
+        <a href="https://github.com/bbnogaia/cargo-robot-2026" style="color:white;">
+            https://github.com/bbnogaia/cargo-robot-2026
+        </a>
+    </p>
+
+    <p>
+        <strong>Student GitHub repository:</strong><br>
+        <a href="https://github.com/alequaranta/iss2026quaranta" style="color:white;">
+            https://github.com/alequaranta/iss2026quaranta
+        </a>
+    </p>
+    <img src="./img/alessandro.jpg" alt="alessandro" width="15%" height="15%">
+    <img src="./img/gaia.jpg" alt="gaia" width="15%" height="15%">
+</div>
+</body>
+</html>
