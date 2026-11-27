@@ -55,155 +55,64 @@ The service must also show on the <i>display</i> on the <i>IOPort</i>:
 <h2>Requirement Analysis</h2>
 
 <pre>
-A partire da quanto svolto nello Sprint0, ci concentriamo sui seguenti requisiti: 
+A partire da quanto svolto nello Sprint1, ci concentriamo sui seguenti requisiti: 
 
-• Studio dei componenti non-attivi del sistema e loro integrazione.
+• Studio e sviluppo del software relativo al Raspberry Pico W.
 
-• Studio del macro-componente <span style="color:red;"><b>cargoservice</b></span> e della logica di business relativa 
-  alle richieste di movimentazione e allocazione dei container.
+• Studio del macro-componente <span style="color:red;"><b>sonar</b></span> e della logica relativa alle misurazioni effettuate dal dispositivo fisico.
 
-• Studio del macro-componente <span style="color:red;"><b>cargorobot</b></span>; il quale realizza le operazioni relative al DDR.
+• Studio del macro-componente <span style="color:red;"><b>led</b></span> e della logica relativa all'accensione e allo spegnimento del led fisico.
 
 </pre>
  
 <h2>Problem Analysis</h2>
 <pre>
-<b>Componenti non-attivi e introduzione di cargohold:</b>
+<b>MQTT:</b>
 
-• Per rappresentare in modo strutturato lo stato della hold e dei suoi componenti, si introducono apposite classi POJO
-  (già presentate e discusse nello Sprint0), 
-  che consentono di modellare le informazioni relative alla configurazione spaziale della stiva e allo stato degli slot.
+• Data la natura distribuita del nostro sistema occorre decidere come i nodi debbano scambiarsi informazioni, perché la scelta del protocollo ha conseguenze sull’architettura, 
+  sulla complessità del codice e sull’affidabilità della comunicazione. Le opzioni possibili sono diverse: socket TCP o UDP diretti, HTTP, CoAP, WebSocket oppure MQTT.
 
-• Una volta definita la rappresentazione della hold e dei relativi componenti, è necessario individuare quale entità 
-  del sistema debba essere responsabile della gestione e della persistenza del suo stato durante l'esecuzione. 
-  Tale responsabilità non dovrebbe essere affidata a cargoservice, poiché un suo eventuale riavvio a runtime 
-  comporterebbe la nuova istanziazione degli oggetti utilizzati per rappresentare lo stato della stiva, 
-  con il rischio di perdere le informazioni accumulate durante l'esecuzione. 
-  Per evitare questa dipendenza e garantire una maggiore separazione delle responsabilità, 
-  si sceglie di introdurre un <b>nuovo microservizio proattivo</b>, dedicato alla gestione e al 
-  mantenimento dello stato della hold e dei suoi componenti: <span style="color:red;"><b>cargohold</b></span>. 
-  Questa entità avrà il compito di monitorare e aggiornare lo stato del sistema, rendendolo disponibile agli altri 
-  servizi attraverso opportune interfacce di comunicazione. In questo modo, cargoservice potrà concentrarsi sulle 
-  proprie responsabilità applicative, delegando la gestione dello stato a un componente dedicato.
+• Il protocollo <b>MQTT</b> si adatta alle nostre esigenze:
 
-• Le modalità di mantenimento dello stato sono affidate al progettista. Si individuano, tuttavia, tre possibili soluzioni:
-  - <b>Salvataggio su database</b>: lo stato del sistema viene salvato e mantenuto in un database. 
-    (Questa soluzione non è ritenuta idonea dal committente, in quanto comporterebbe la necessità di gestire e mantenere un database dedicato.)
-  - <b>Salvataggio su file locale</b>: lo stato del sistema viene salvato in un semplice file sullo stesso nodo di elaborazione.
-  - <b>Gestione a runtime</b>: lo stato del sistema dipende dal processo in esecuzione. In caso di errore o arresto di cargohold, il sistema viene reinizializzato.
+  <b>1.</b> Il protocollo è leggero e pensato per dispositivi con poche risorse: il Pico W ha il Wi-Fi integrato e in MicroPython basta la libreria umqtt.simple per pubblicare 
+  e ricevere messaggi con poche righe di codice.
 
-• L'introduzione di <span style="color:red;"><b>cargohold</b></span> come servizio separato rende la sua gestione scalabile e modificabile nel tempo.
+  <b>2.</b> Il modello publish/subscribe si adatta bene alla natura del problema: il sonar produce un flusso di misurazioni asincrone e il led riceve comandi occasionali, 
+  quindi il sensore pubblica su un topic senza sapere chi lo ascolta, e il broker si occupa di consegnare i messaggi a tutti gli attori interessati.
+
+  <b>3.</b> Il sistema QAK supporta MQTT in modo nativo e vede il Pico W solo come una sorgente di eventi su un topic senza il bisogno di conoscere
+  indirizzo IP e PORTA del dispositivo (viceversa per il Pico W). 
+
+  <img src="../userDocs/img/mqtt.png" alt="alessandro" width="50%" height="50%">
+
 </pre>
 
 <pre>
-<b>Relazione cargorobot &leftrightarrow; robotsmart26:</b>
+<b>Software del Pico W:</b>
 
-• Sulla base dei requisiti e delle indicazioni fornite dal committente, si stabilisce che i due componenti software robotsmart26 e cargorobot 
-  siano da considerarsi equivalenti e facciano riferimento alla medesima entità all'interno dell'architettura del sistema. 
-  Tale scelta consente di uniformare la terminologia utilizzata nella documentazione, evitando ambiguità nell'identificazione 
-  del componente e nella descrizione delle sue responsabilità. 
-  Di conseguenza, da questo punto in avanti, <b>i termini robotsmart26 e cargorobot saranno utilizzati in modo intercambiabile</b>, 
-  senza che ciò implichi l'esistenza di due componenti software distinti.
+• Il codice in esecuzione sul Raspberry Pico W dovrà connettersi al Wi-Fi e al broker MQTT e svolgere due compiti in parallelo:
 
-• Si osserva che robotsmart26 non gestisce lo stato degli slot, ma come già anticipato, sarà compito cargohold.
-</pre>
+  <b>1.</b> Comunire le distanze rilevate.
+  <b>2.</b> Ricevere lo stato del led associato e gestire il suo funzionamento.
 
-<pre>
-<b>Definizione dei QActor e dei contesti:</b>
+• Per integrarsi con il sistema, il software sviluppato prevede che i messaggi pubblicati dal Pico W usino lo stesso formato dei messaggi QAK.
+  <code>
+    // Esempio di riferimento:
+    msg(sonarDistance,event,pico,none,distance(D),N)
+  </code>
+  In questo modo il runtime QAK riconosce direttamente la misura come l’evento sonarDistance, senza conversioni intermedie.
 
-Di seguito definiamo gli attori in gioco modellando un primo sistema:
+• L'unità di misura di riferimento sono i centimetri.
 
-<code>
-System cargocompany
-
-Context ctxcargocompany ip [ host="localhost" port=8040] 
-Context ctxrobotsmart ip [host="127.0.0.1" port=8050 ]
-
-//...
-
-ExternalQActor robotsmart context ctxrobotsmart
-
-//...
-
-QActor cargohold context ctxcargocompany
-
-//...
-
-QActor cargoservice context ctxcargocompany 
-
-</code>
-</pre>
-
-<pre>
-<b>Relazione con il PicoW (sonar - led):</b>
-
-• La logica applicativa relativa alle misurazioni del sonar, definita dai requisiti, è interamente delegata al QActor dedicato, denominato <b>sonar</b>. 
-  Questo si occupa di elaborare le misurazioni e di fornire agli attori interessati del sistema esclusivamente le informazioni 
-  essenziali per il suo corretto funzionamento. Si evidenzia, in questo modo, una netta separazione dei compiti e una chiara distribuzione 
-  delle responsabilità tra i diversi componenti del sistema.
-
-• Dai requisiti emerge inoltre che un entità dovrà interagire con la <b>webgui</b> per segnalare lo stato operativo del dispositivo hardware, 
-  indicando se si trova in condizione di Out Of Service oppure Service Working. Questo rappresenta un'ulteriore motivazione a favore della scelta 
-  di delegare la logica relativa alle misurazioni al servizio <b>sonar</b>, centralizzando in un unico componente le responsabilità legate alla gestione del dispositivo.
-
-  <img src="../cargobot1/cargobot-1.0_schemi/sonar.png" alt="alessandro" width="60%" height="60%">
-
-• Si individuano le informazioni di interesse di <b>cargoservice</b>:
-  - Posizionamento di un container nello zona di carico
-  - Il sonar è Out Of Service
-
-• Il <b>led</b> collegato al PicoW deve rispecchiare lo stato del sistema, accendendosi durante la fase di engaged e spegnendosi in quella di disengaged. 
-  A tale scopo, cargoservice comunica con il relativo attore responsabile servendosi di un messaggio dispatch.
 </pre>
 
 <pre>
 <b>Dettaglio messaggi:</b>
 
-• <span style="color:red;"><b>cargohold</b></span> comunica tramite la seguente sintassi:
-
-•  <span style="color:rgb(0, 85, 255);"><b>cargohold &leftrightarrow; cargoservice</b></span>
-  <code>
-    Request requestSlot : requestSlot(NOARGS)
-    Reply slotReserved : slotReserved(ANSWER) for requestSlot
-    Reply slotFailed : slotFailed(REASON) for requestSlot
-
-    Request setSlot : setSlot(SLOTID, STATE)
-    Reply setSlotChanged : setSlotChanged(NOARGS) for setSlot
-    Reply setSlotFailed : setSlotFailed(REASON) for setSlot
-
-    Request requestPosition : requestPosition(POSITION)
-    Reply slotPosition : slotPosition(X, Y) for requestPosition
-    Reply positionFailed : positionFailed(REASON) for requestPosition
-  </code>
-  Richieste attese:
-  - <b>setSlot</b>: slotId, stato "free", "reserved" o "occupied"
-  - <b>requestPosition</b>: slotId, "ioport" oppure "home"
-
-  Risposte attese:
-  - <b>slotReserved</b>: slotId riservato
-  - <b>slotPosition</b>: coordinate X, Y
-  - <b>slotFailed</b>: motivazione
-  - <b>setSlotFailed</b>: motivazione
-  - <b>positionFailed</b>: motivazione
-
-• <span style="color:red;"><b>cargoservice</b></span> comunica tramite la seguente sintassi:
-
-  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; webgui</b></span>
-  <code>
-    Request requestToLoad : requestToLoad(NOARGS)
-    Reply loadAccepted : loadAccepted(ANSWER) for requestToLoad
-    Reply loadRejected : loadRejected(ANSWER) for requestToLoad
-    Reply loadRetryLater : loadRetryLater(ANSWER) for requestToLoad
-  </code>
-  Risposte attese:
-  - <b>loadAccepted</b>: slotId riservato
-  - <b>loadRejected</b>: "rejected"
-  - <b>loadRetryLater</b>: "retrylater"
-
   •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; sonar</b></span>
   <code>
-    Dispatch containerArrived : containerArrived(NOARGS)
-    Dispatch outOfService : outOfService(NOARGS)
+    Event containerDetected : containerDetected(NOARGS)
+    Event outOfService : outOfService(NOARGS)
   </code>
 
 •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; led</b></span>
@@ -213,27 +122,19 @@ QActor cargoservice context ctxcargocompany
   Messaggi attesi:
   - <b>ledState</b>: "on", "off"
 
-• <span style="color:red;"><b>cargoservice</b></span> coordina i movimenti del <span style="color:red;"><b>cargorobot</b></span> e si interfaccia con il software del committente, adattandosi ai suoi formati di messaggistica.
-Si evidenziano i più rilevanti:
-
-  •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; cargorobot (robotsmart26)</b></span>
- <code>
-    Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
-    Reply moverobotdone : moverobotdone(ARG) for moverobot 
-    Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
- </code>
-
-
-• Notiamo gli attori, essendo configurati come un QActor (Qak), presentano una propria <span style="color:rgb(153, 0, 255);"><b>coda locale</b></span> in cui sono
-  depositati i messaggi a loro inviati da altri attori. Per capirne bene le conseguenza è possibile affidarsi alla documentazione Qak.  
 </pre>
 
 <pre>
-<b>Modello:</b>
+<b>Coda dei messaggi:</b>
 
-<img src="../cargobot1/cargobot-1.0_schemi/cargosystemArch.png" alt="alessandro" width="70%" height="70%">
+• Gli eventi emessi dal sonar non sono stati, ma segnalazioni che il runtime QAK accoda per ogni attore. 
+  Se <span style="color:red;"><b>cargoservice</b></span> sta svolgendo altre attività, gli eventi emessi restano nella coda associata.
+
+• Quando arriva una richiesta di carico, questi eventi potrebbero descrivere una situazione ormai superata.
+  Per evitarlo dobbiamo aggiungere a <span style="color:red;"><b>cargoservice</b></span> un nuovo stato che consuma e scarta gli eventi accumulati e si concentra su quelli successivi alla richiesta di carico.
+
+    <img src="../userDocs/img/coda.png" alt="alessandro" width="60%" height="60%">
 </pre>
-
 
 <h2>Test plans</h2> 
 <pre>

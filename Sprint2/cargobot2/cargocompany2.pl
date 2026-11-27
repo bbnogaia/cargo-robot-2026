@@ -18,8 +18,8 @@ reply( positionFailed, positionFailed(REASON) ).  %%for requestPosition
 request( moverobot, moverobot(TARGETX,TARGETY,STEPTIME) ).
 reply( moverobotdone, moverobotdone(ARG) ).  %%for moverobot
 reply( moverobotfailed, moverobotfailed(PLANDONE,PLANTODO) ).  %%for moverobot
-dispatch( containerArrived, containerArrived(NOARGS) ).
-dispatch( outOfService, outOfService(NOARGS) ).
+event( containerDetected, containerDetected(NOARGS) ).
+event( outOfService, outOfService(NOARGS) ).
 dispatch( ledState, ledState(STATE) ).
 event( sonarDistance, distance(D) ).
 event( ledBlink, ledBlink(STATE) ).

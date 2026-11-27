@@ -158,10 +158,10 @@ QActor cargoservice context ctxcargocompany
   delle responsabilità tra i diversi componenti del sistema.
 
 • Dai requisiti emerge inoltre che un entità dovrà interagire con la <b>webgui</b> per segnalare lo stato operativo del dispositivo hardware, 
-  indicando se si trova in condizione di Out Of Service oppure Service Working. Questo rappresenta un'ulteriore motivazione a favore della scelta 
+  indicando se si trova in condizione di Out Of Service. Questo rappresenta un'ulteriore motivazione a favore della scelta 
   di delegare la logica relativa alle misurazioni al servizio <b>sonar</b>, centralizzando in un unico componente le responsabilità legate alla gestione del dispositivo.
 
-  <img src="../cargobot1/cargobot-1.0_schemi/sonar.png" alt="alessandro" width="60%" height="60%">
+  <img src="../userDocs/img/sonarr.png" alt="alessandro" width="60%" height="60%">
 
 • Si individuano le informazioni di interesse di <b>cargoservice</b>:
   - Posizionamento di un container nello zona di carico
@@ -217,8 +217,8 @@ QActor cargoservice context ctxcargocompany
 
   •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; sonar</b></span>
   <code>
-    Dispatch containerArrived : containerArrived(NOARGS)
-    Dispatch outOfService : outOfService(NOARGS)
+    Event containerDetected : containerDetected(NOARGS)
+    Event outOfService : outOfService(NOARGS)
   </code>
 
 •  <span style="color:rgb(0, 85, 255);"><b>cargoservice &leftrightarrow; led</b></span>
@@ -246,7 +246,7 @@ Si evidenziano i più rilevanti:
 <pre>
 <b>Modello:</b>
 
-<img src="../cargobot1/cargobot-1.0_schemi/cargosystemArch.png" alt="alessandro" width="70%" height="70%">
+<img src="../userDocs/img/qakschema.png" alt="alessandro" width="70%" height="70%">
 </pre>
 
 
@@ -315,7 +315,7 @@ Si evidenziano i più rilevanti:
   Attualmente non si ritiene necessario il salvataggio dello stato del sistema su un file esterno.
   Lo stato verrà mantenuto finchè il servizio rimarrà attivo sul nodo.
 </pre>
-
+ 
 <pre>
 <b>Stati del servizio cargohold:</b>
 <img src="../cargobot1/cargobot-1.0_schemi/cargohold.svg" alt="alessandro" width="80%" height="80%">

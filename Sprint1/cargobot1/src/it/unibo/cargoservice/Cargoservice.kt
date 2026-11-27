@@ -216,8 +216,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				 	 					  scope, context!!, "local_tout_"+name+"_waitForContainer", 30000.toLong() )  //OCT2023
 					}	 	 
 					 transition(edgeName="tw114",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
-					transition(edgeName="tw115",targetState="moveToIOPort",cond=whenDispatch("containerArrived"))
-					transition(edgeName="tw116",targetState="disengaged",cond=whenDispatch("outOfService"))
+					transition(edgeName="tw115",targetState="moveToIOPort",cond=whenEvent("containerDetected"))
+					transition(edgeName="tw116",targetState="disengaged",cond=whenEvent("outOfService"))
 				}	 
 				state("handleTimeout") { //this:State
 					action { //it:State

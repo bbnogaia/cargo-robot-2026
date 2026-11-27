@@ -47,7 +47,7 @@ class Mockled ( name: String, scope: CoroutineScope, isconfined: Boolean=false, 
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t034",targetState="handleLedState",cond=whenDispatch("ledState"))
+					 transition(edgeName="t033",targetState="handleLedState",cond=whenDispatch("ledState"))
 				}	 
 				state("handleLedState") { //this:State
 					action { //it:State

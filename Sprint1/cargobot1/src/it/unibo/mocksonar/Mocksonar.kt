@@ -44,7 +44,7 @@ class Mocksonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 					action { //it:State
 						delay(6000) 
 						CommUtils.outcyan("$name | Rilevato container nell'area sensore! Invio containerArrived...")
-						forward("containerArrived", "containerArrived(ok)" ,"cargoservice" ) 
+						emitlocal("containerDetected", "containerDetected(ok)" ) 
 						delay(15000) 
 						//genTimer( actor, state )
 					}
@@ -55,7 +55,7 @@ class Mocksonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false
 				}	 
 				state("mockOFS") { //this:State
 					action { //it:State
-						forward("outOfService", "outOfService(ofs)" ,"cargoservice" ) 
+						emitlocal("outOfService", "outOfService(ofs)" ) 
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002

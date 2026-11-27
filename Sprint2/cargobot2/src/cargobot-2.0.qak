@@ -30,11 +30,11 @@ Request moverobot : moverobot(TARGETX, TARGETY, STEPTIME)
 Reply moverobotdone : moverobotdone(ARG) for moverobot 
 Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
 
-// cargoservice <-> (mock) sensor
-Dispatch containerArrived : containerArrived(NOARGS)
-Dispatch outOfService : outOfService(NOARGS)
+// cargoservice <-> sensor
+Event containerDetected : containerDetected(NOARGS)
+Event outOfService : outOfService(NOARGS)
 
-// cargoservice <-> (mock) led
+// cargoservice <-> led
 Dispatch ledState  : ledState(STATE)
 
 // MQTT
@@ -270,7 +270,7 @@ QActor cargoservice context ctxcargocompany {
         forward led -m ledState : ledState(off)
     }
     Transition td1
-        whenRequest requestToLoad -> handleLoad
+        whenRequest requestToLoad -> drainEvents
         
     /**
      *  STATE LOAD: -------------------------------------------------------------------
@@ -279,11 +279,32 @@ QActor cargoservice context ctxcargocompany {
      *  Recupera le coordinate dello slot assegnato.
      */
      
+    State drainEvents {
+        println("$name | Richiesta di carico: scarto eventi vecchi...") color magenta
+    }
+    Transition tl01
+        whenTime 300 -> waitFreshEvent
+        whenEvent containerDetected -> drainEvents
+        whenEvent outOfService -> drainEvents
+
+    State waitFreshEvent {
+        println("$name | Verifico la presenza di container e lo stato del sonar...") color magenta
+    }
+    Transition tl02
+        whenTime 3500 -> handleLoad
+        whenEvent containerDetected -> handleRetry
+        whenEvent outOfService -> handleRetry
+        
+    State handleRetry {
+        println("$name | Zona di carico occupata o sonar fuori servizio: retrylater") color magenta
+        replyTo requestToLoad with loadRetryLater : loadRetryLater(retrylater)
+    }
+    Goto disengaged
+     
     State handleLoad {
-        onMsg( requestToLoad : requestToLoad(NOARGS) ) {
-            println("$name | Ricevuta richiesta di carico: requestToLoad") color magenta
-            request cargohold -m requestSlot : requestSlot(NOARGS)
-        }
+        println("$name | Ricevuta richiesta di carico: requestToLoad") color magenta
+        request cargohold -m requestSlot : requestSlot(NOARGS)
+        
     }
     Transition tl1
         whenReply slotReserved -> confirmLoadToClient
@@ -340,8 +361,8 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition tw1
         whenTime 30000 -> handleTimeout // Timeout scaduto (30 secondi)
-        whenMsg containerArrived -> moveToIOPort
-        whenMsg outOfService -> disengaged  
+        whenEvent containerDetected -> moveToIOPort
+        whenEvent outOfService -> disengaged  
 
     State handleTimeout {
         println("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...") color red
@@ -448,15 +469,13 @@ QActor sonar context ctxcargocompany {
 
     [#
         val DFREE = 20.0
+        val PERIOD_MS = 3000L
 
-		var belowSince = 0L
-		var aboveSince = 0L
+        var belowSince = 0L
+        var aboveSince = 0L
 
-		var containerAlreadyReported = false
-		var outOfServiceAlreadyReported = false
-
-		var containerDetected = false
-		var sonarFailed = false
+        var sendContainerEvent = false
+        var sendOutOfServiceEvent = false
     #]
 
     State s0 initial {
@@ -464,7 +483,7 @@ QActor sonar context ctxcargocompany {
     }
     Goto waitingDistance
 
-	/**
+    /**
      *  STATE WORKING: ----------------------------------------------------------
      *  Processa le distanze.
      */
@@ -476,7 +495,7 @@ QActor sonar context ctxcargocompany {
         whenEvent sonarDistance -> processDistance
 
 
-     State processDistance {
+    State processDistance {
         onMsg( sonarDistance : distance(D) ) {
             [#
                 val raw = currentMsg.msgContent()
@@ -491,48 +510,44 @@ QActor sonar context ctxcargocompany {
 
                     println("$name | Distanza ricevuta: $distance cm")
 
-                    // CASO 1: CONTAINER RILEVATO (D < DFREE/2 per almeno 3 secondi)
+                    // CASO 1: CONTAINER PRESENTE (D < DFREE/2)
+                    // belowSince = inizio del conteggio, poi ultimo invio dell'evento.
+                    // Si invia quando il container e' presente da almeno 3 secondi,
+                    // e di nuovo ogni 3 secondi finche' resta li'.
                     if (distance < DFREE / 2.0) {
 
                         aboveSince = 0L
-                        outOfServiceAlreadyReported = false
 
                         if (belowSince == 0L) {
                             belowSince = now
                             println("$name | Container potenzialmente rilevato")
-                        }
-
-                        if (!containerAlreadyReported && now - belowSince >= 3000L) {
-                            containerDetected = true
-                            containerAlreadyReported = true
+                        } else if (now - belowSince >= PERIOD_MS) {
+                            sendContainerEvent = true
+                            belowSince = now
                         }
                     }
 
-                    // CASO 2: SONAR OUT OF SERVICE (D > DFREE per almeno 3 secondi)
+                    // CASO 2: SONAR OUT OF SERVICE (D > DFREE)
+                    // Stessa logica: primo invio dopo 3 secondi, poi ogni 3 secondi.
                     else if (distance > DFREE) {
 
                         belowSince = 0L
-                        containerAlreadyReported = false
 
                         if (aboveSince == 0L) {
                             aboveSince = now
                             println("$name | Sonar potenzialmente guasto")
-                        }
-
-                        if (!outOfServiceAlreadyReported && now - aboveSince >= 3000L) {
-                            sonarFailed = true
-                            outOfServiceAlreadyReported = true
+                        } else if (now - aboveSince >= PERIOD_MS) {
+                            sendOutOfServiceEvent = true
+                            aboveSince = now
                         }
                     }
 
                     // CASO 3: DISTANZA NEL RANGE NORMALE (DFREE/2 <= D <= DFREE)
+                    // Il container e' uscito o il sonar e' tornato normale: il conteggio riparte da zero.
                     else {
 
                         belowSince = 0L
                         aboveSince = 0L
-
-                        containerAlreadyReported = false
-                        outOfServiceAlreadyReported = false
 
                         println("$name | Distanza nel range normale")
                     }
@@ -543,22 +558,18 @@ QActor sonar context ctxcargocompany {
             #]
         }
 
-        // Invio messaggio containerArrived
-        if [# containerDetected #] {
-            println("$name | CONTAINER RILEVATO! Invio containerArrived") color blue
-            forward cargoservice -m containerArrived : containerArrived(NOARGS)
-            [# containerDetected = false 
-            	 belowSince = 0L
-                 aboveSince = 0L
-                 #]
+        // Emissione evento containerDetected
+        if [# sendContainerEvent #] {
+            println("$name | CONTAINER PRESENTE! Emetto containerDetected") color blue
+            emitlocal containerDetected : containerDetected(ok)
+            [# sendContainerEvent = false #]
         }
 
-        // Invio messaggio outOfService a mockwebgui
-        if [# sonarFailed #] {
-            println("$name | OUT OF SERVICE! Invio segnalazione a mockwebgui") color red
-            forward mockwebgui -m outOfService : outOfService(NOARGS)
-            forward cargoservice -m outOfService : outOfService(NOARGS)
-            [# sonarFailed = false #]
+        // Emissione evento outOfService
+        if [# sendOutOfServiceEvent #] {
+            println("$name | OUT OF SERVICE! Emetto outOfService") color red
+            emitlocal outOfService : outOfService(ofs)
+            [# sendOutOfServiceEvent = false #]
         }
     }
     Goto waitingDistance
@@ -602,7 +613,7 @@ QActor mockwebgui context ctxcargocompany {
     
     State s0 initial {
         println("$name | Init ") color yellow  
-        delay 10000 
+        delay 5000 
     }
     Goto mockReq
     
@@ -615,7 +626,7 @@ QActor mockwebgui context ctxcargocompany {
         whenReply loadAccepted -> handleAccepted
         whenReply loadRejected -> handleRejected
         whenReply loadRetryLater -> handleRetry
-        whenMsg outOfService -> handleOutOfService
+        whenEvent outOfService -> handleOutOfService
     
     State handleAccepted {
         onMsg( loadAccepted : loadAccepted(ANSWER) ) {

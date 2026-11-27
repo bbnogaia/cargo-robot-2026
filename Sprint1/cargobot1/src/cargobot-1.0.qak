@@ -29,8 +29,8 @@ Reply moverobotdone : moverobotdone(ARG) for moverobot
 Reply moverobotfailed : moverobotfailed(PLANDONE, PLANTODO) for moverobot 
 
 // cargoservice <-> (mock) sensor
-Dispatch containerArrived : containerArrived(NOARGS)
-Dispatch outOfService : outOfService(NOARGS)
+Event containerDetected : containerDetected(NOARGS)
+Event outOfService : outOfService(NOARGS)
 
 // cargoservice <-> (mock) led
 Dispatch ledState  : ledState(STATE)
@@ -334,8 +334,8 @@ QActor cargoservice context ctxcargocompany {
     }
     Transition tw1
         whenTime 30000 -> handleTimeout // Timeout scaduto (30 secondi)
-        whenMsg containerArrived -> moveToIOPort
-        whenMsg outOfService -> disengaged  
+        whenEvent containerDetected -> moveToIOPort
+        whenEvent outOfService -> disengaged  
 
     State handleTimeout {
         println("$name | TIMEOUT: Container non posizionato entro 30 secondi! Ripristino slot libero...") color red
@@ -448,14 +448,14 @@ QActor mocksonar context ctxcargocompany {
         // Attende qualche secondo prima di simulare il posizionamento
         delay 6000
         println("$name | Rilevato container nell'area sensore! Invio containerArrived...") color cyan
-        forward cargoservice -m containerArrived : containerArrived(ok)
+        emitlocal containerDetected : containerDetected(ok)
 
         delay 15000
     }
     Goto mockDetection
     
     State mockOFS{
-    	 forward cargoservice -m outOfService : outOfService(ofs)
+    	 emitlocal outOfService : outOfService(ofs)
     }
 }
 

@@ -123,22 +123,58 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="td19",targetState="handleLoad",cond=whenRequest("requestToLoad"))
+					 transition(edgeName="td19",targetState="drainEvents",cond=whenRequest("requestToLoad"))
 				}	 
-				state("handleLoad") { //this:State
+				state("drainEvents") { //this:State
 					action { //it:State
-						if( checkMsgContent( Term.createTerm("requestToLoad(NOARGS)"), Term.createTerm("requestToLoad(NOARGS)"), 
-						                        currentMsg.msgContent()) ) { //set msgArgList
-								CommUtils.outmagenta("$name | Ricevuta richiesta di carico: requestToLoad")
-								request("requestSlot", "requestSlot(NOARGS)" ,"cargohold" )  
-						}
+						CommUtils.outmagenta("$name | Richiesta di carico: scarto eventi vecchi...")
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+				 	 		stateTimer = TimerActor("timer_drainEvents", 
+				 	 					  scope, context!!, "local_tout_"+name+"_drainEvents", 300.toLong() )  //OCT2023
+					}	 	 
+					 transition(edgeName="tl0110",targetState="waitFreshEvent",cond=whenTimeout("local_tout_"+name+"_drainEvents"))   
+					transition(edgeName="tl0111",targetState="drainEvents",cond=whenEvent("containerDetected"))
+					transition(edgeName="tl0112",targetState="drainEvents",cond=whenEvent("outOfService"))
+				}	 
+				state("waitFreshEvent") { //this:State
+					action { //it:State
+						CommUtils.outmagenta("$name | Verifico la presenza di container e lo stato del sonar...")
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+				 	 		stateTimer = TimerActor("timer_waitFreshEvent", 
+				 	 					  scope, context!!, "local_tout_"+name+"_waitFreshEvent", 3500.toLong() )  //OCT2023
+					}	 	 
+					 transition(edgeName="tl0213",targetState="handleLoad",cond=whenTimeout("local_tout_"+name+"_waitFreshEvent"))   
+					transition(edgeName="tl0214",targetState="handleRetry",cond=whenEvent("containerDetected"))
+					transition(edgeName="tl0215",targetState="handleRetry",cond=whenEvent("outOfService"))
+				}	 
+				state("handleRetry") { //this:State
+					action { //it:State
+						CommUtils.outmagenta("$name | Zona di carico occupata o sonar fuori servizio: retrylater")
+						answer("requestToLoad", "loadRetryLater", "loadRetryLater(retrylater)"   )  
 						//genTimer( actor, state )
 					}
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tl110",targetState="confirmLoadToClient",cond=whenReply("slotReserved"))
-					transition(edgeName="tl111",targetState="handleLoadFailed",cond=whenReply("slotFailed"))
+					 transition( edgeName="goto",targetState="disengaged", cond=doswitch() )
+				}	 
+				state("handleLoad") { //this:State
+					action { //it:State
+						CommUtils.outmagenta("$name | Ricevuta richiesta di carico: requestToLoad")
+						request("requestSlot", "requestSlot(NOARGS)" ,"cargohold" )  
+						//genTimer( actor, state )
+					}
+					//After Lenzi Aug2002
+					sysaction { //it:State
+					}	 	 
+					 transition(edgeName="tl116",targetState="confirmLoadToClient",cond=whenReply("slotReserved"))
+					transition(edgeName="tl117",targetState="handleLoadFailed",cond=whenReply("slotFailed"))
 				}	 
 				state("handleLoadFailed") { //this:State
 					action { //it:State
@@ -176,8 +212,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tl212",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
-					transition(edgeName="tl213",targetState="handlePositionFail",cond=whenReply("positionFailed"))
+					 transition(edgeName="tl218",targetState="saveSlotPosition",cond=whenReply("slotPosition"))
+					transition(edgeName="tl219",targetState="handlePositionFail",cond=whenReply("positionFailed"))
 				}	 
 				state("saveSlotPosition") { //this:State
 					action { //it:State
@@ -215,9 +251,9 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 				 	 		stateTimer = TimerActor("timer_waitForContainer", 
 				 	 					  scope, context!!, "local_tout_"+name+"_waitForContainer", 30000.toLong() )  //OCT2023
 					}	 	 
-					 transition(edgeName="tw114",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
-					transition(edgeName="tw115",targetState="moveToIOPort",cond=whenDispatch("containerArrived"))
-					transition(edgeName="tw116",targetState="disengaged",cond=whenDispatch("outOfService"))
+					 transition(edgeName="tw120",targetState="handleTimeout",cond=whenTimeout("local_tout_"+name+"_waitForContainer"))   
+					transition(edgeName="tw121",targetState="moveToIOPort",cond=whenEvent("containerDetected"))
+					transition(edgeName="tw122",targetState="disengaged",cond=whenEvent("outOfService"))
 				}	 
 				state("handleTimeout") { //this:State
 					action { //it:State
@@ -228,8 +264,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="tw217",targetState="disengaged",cond=whenReply("setSlotChanged"))
-					transition(edgeName="tw218",targetState="disengaged",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="tw223",targetState="disengaged",cond=whenReply("setSlotChanged"))
+					transition(edgeName="tw224",targetState="disengaged",cond=whenReply("setSlotFailed"))
 				}	 
 				state("moveToIOPort") { //this:State
 					action { //it:State
@@ -240,8 +276,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te119",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
-					transition(edgeName="te120",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te125",targetState="moveToSlot5",cond=whenReply("moverobotdone"))
+					transition(edgeName="te126",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("moveToSlot5") { //this:State
 					action { //it:State
@@ -253,8 +289,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te221",targetState="markContainer",cond=whenReply("moverobotdone"))
-					transition(edgeName="te222",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te227",targetState="markContainer",cond=whenReply("moverobotdone"))
+					transition(edgeName="te228",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("markContainer") { //this:State
 					action { //it:State
@@ -276,8 +312,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te323",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
-					transition(edgeName="te324",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te329",targetState="finalizeStorage",cond=whenReply("moverobotdone"))
+					transition(edgeName="te330",targetState="handlePreDeliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finalizeStorage") { //this:State
 					action { //it:State
@@ -288,8 +324,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te425",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="te426",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te431",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te432",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("returnToHome") { //this:State
 					action { //it:State
@@ -300,8 +336,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te527",targetState="finishOperation",cond=whenReply("moverobotdone"))
-					transition(edgeName="te528",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te533",targetState="finishOperation",cond=whenReply("moverobotdone"))
+					transition(edgeName="te534",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 				state("finishOperation") { //this:State
 					action { //it:State
@@ -323,8 +359,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te629",targetState="returnToHome",cond=whenReply("setSlotChanged"))
-					transition(edgeName="te630",targetState="returnToHome",cond=whenReply("setSlotFailed"))
+					 transition(edgeName="te635",targetState="returnToHome",cond=whenReply("setSlotChanged"))
+					transition(edgeName="te636",targetState="returnToHome",cond=whenReply("setSlotFailed"))
 				}	 
 				state("handlePostDevliveryFailure") { //this:State
 					action { //it:State
@@ -336,8 +372,8 @@ class Cargoservice ( name: String, scope: CoroutineScope, isconfined: Boolean=fa
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="te731",targetState="disengaged",cond=whenReply("moverobotdone"))
-					transition(edgeName="te732",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
+					 transition(edgeName="te737",targetState="disengaged",cond=whenReply("moverobotdone"))
+					transition(edgeName="te738",targetState="handlePostDevliveryFailure",cond=whenReply("moverobotfailed"))
 				}	 
 			}
 		}

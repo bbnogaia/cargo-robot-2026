@@ -31,15 +31,13 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 		//IF actor.withobj !== null val actor.withobj.name� = actor.withobj.method�ENDIF
 		
 		        val DFREE = 20.0
+		        val PERIOD_MS = 3000L
 		
-				var belowSince = 0L
-				var aboveSince = 0L
+		        var belowSince = 0L
+		        var aboveSince = 0L
 		
-				var containerAlreadyReported = false
-				var outOfServiceAlreadyReported = false
-		
-				var containerDetected = false
-				var sonarFailed = false
+		        var sendContainerEvent = false
+		        var sendOutOfServiceEvent = false
 		return { //this:ActionBasciFsm
 				state("s0") { //this:State
 					action { //it:State
@@ -58,7 +56,7 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 					//After Lenzi Aug2002
 					sysaction { //it:State
 					}	 	 
-					 transition(edgeName="t033",targetState="processDistance",cond=whenEvent("sonarDistance"))
+					 transition(edgeName="t039",targetState="processDistance",cond=whenEvent("sonarDistance"))
 				}	 
 				state("processDistance") { //this:State
 					action { //it:State
@@ -77,48 +75,44 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 								
 								                    println("$name | Distanza ricevuta: $distance cm")
 								
-								                    // CASO 1: CONTAINER RILEVATO (D < DFREE/2 per almeno 3 secondi)
+								                    // CASO 1: CONTAINER PRESENTE (D < DFREE/2)
+								                    // belowSince = inizio del conteggio, poi ultimo invio dell'evento.
+								                    // Si invia quando il container e' presente da almeno 3 secondi,
+								                    // e di nuovo ogni 3 secondi finche' resta li'.
 								                    if (distance < DFREE / 2.0) {
 								
 								                        aboveSince = 0L
-								                        outOfServiceAlreadyReported = false
 								
 								                        if (belowSince == 0L) {
 								                            belowSince = now
 								                            println("$name | Container potenzialmente rilevato")
-								                        }
-								
-								                        if (!containerAlreadyReported && now - belowSince >= 3000L) {
-								                            containerDetected = true
-								                            containerAlreadyReported = true
+								                        } else if (now - belowSince >= PERIOD_MS) {
+								                            sendContainerEvent = true
+								                            belowSince = now
 								                        }
 								                    }
 								
-								                    // CASO 2: SONAR OUT OF SERVICE (D > DFREE per almeno 3 secondi)
+								                    // CASO 2: SONAR OUT OF SERVICE (D > DFREE)
+								                    // Stessa logica: primo invio dopo 3 secondi, poi ogni 3 secondi.
 								                    else if (distance > DFREE) {
 								
 								                        belowSince = 0L
-								                        containerAlreadyReported = false
 								
 								                        if (aboveSince == 0L) {
 								                            aboveSince = now
 								                            println("$name | Sonar potenzialmente guasto")
-								                        }
-								
-								                        if (!outOfServiceAlreadyReported && now - aboveSince >= 3000L) {
-								                            sonarFailed = true
-								                            outOfServiceAlreadyReported = true
+								                        } else if (now - aboveSince >= PERIOD_MS) {
+								                            sendOutOfServiceEvent = true
+								                            aboveSince = now
 								                        }
 								                    }
 								
 								                    // CASO 3: DISTANZA NEL RANGE NORMALE (DFREE/2 <= D <= DFREE)
+								                    // Il container e' uscito o il sonar e' tornato normale: il conteggio riparte da zero.
 								                    else {
 								
 								                        belowSince = 0L
 								                        aboveSince = 0L
-								
-								                        containerAlreadyReported = false
-								                        outOfServiceAlreadyReported = false
 								
 								                        println("$name | Distanza nel range normale")
 								                    }
@@ -127,18 +121,15 @@ class Sonar ( name: String, scope: CoroutineScope, isconfined: Boolean=false, is
 								                    println("$name | Payload non valido: $raw")
 								                }
 						}
-						if(  containerDetected  
-						 ){CommUtils.outblue("$name | CONTAINER RILEVATO! Invio containerArrived")
-						forward("containerArrived", "containerArrived(NOARGS)" ,"cargoservice" ) 
-						 containerDetected = false 
-						            	 belowSince = 0L
-						                 aboveSince = 0L
+						if(  sendContainerEvent  
+						 ){CommUtils.outblue("$name | CONTAINER PRESENTE! Emetto containerDetected")
+						emitlocal("containerDetected", "containerDetected(ok)" ) 
+						 sendContainerEvent = false  
 						}
-						if(  sonarFailed  
-						 ){CommUtils.outred("$name | OUT OF SERVICE! Invio segnalazione a mockwebgui")
-						forward("outOfService", "outOfService(NOARGS)" ,"mockwebgui" ) 
-						forward("outOfService", "outOfService(NOARGS)" ,"cargoservice" ) 
-						 sonarFailed = false  
+						if(  sendOutOfServiceEvent  
+						 ){CommUtils.outred("$name | OUT OF SERVICE! Emetto outOfService")
+						emitlocal("outOfService", "outOfService(ofs)" ) 
+						 sendOutOfServiceEvent = false  
 						}
 						//genTimer( actor, state )
 					}
